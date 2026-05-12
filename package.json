@@ -1,0 +1,34 @@
+{
+  "name": "gestion-taller-maestranza",
+  "version": "1.0.1",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "dist": "electron-builder --win -p always"
+  },
+  "dependencies": {
+    "electron-log": "^4.4.8",
+    "electron-updater": "^6.8.3"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.taller.presupuestos",
+    "productName": "Sistema de Presupuesto",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "franciscosotelob-creator",
+        "repo": "sistema-de-presupuestos"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  }
+}

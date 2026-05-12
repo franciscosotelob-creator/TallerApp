@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bolpar - v6.9.2 Pro Platinum (Safe Save)</title>
+    
+    <!-- Script de compatibilidad para Electron -->
+    <script>
+        if (typeof module === 'object') {
+            window.nodeModule = module;
+            module = undefined;
+        }
+    </script>
+
+    <!-- Librerías Core -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <!-- Iconos Lucide -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <script>
+        if (window.nodeModule) module = window.nodeModule;
+    </script>
+
+    <style>
+        /* --- [ZONA 1] ESTILOS DE PANTALLA --- */
+        @media screen {
+            .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+            .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+            textarea { resize: none; min-height: 1.5em; line-height: 1.4; }
+            .fade-in { animation: fadeIn 0.3s ease-in; }
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            
+            /* Encabezado con Pestaña Negra */
+            .header-tab {
+                background-color: #0f172a;
+                color: white;
+                font-weight: 900;
+                text-transform: uppercase;
+                letter-spacing: 0.25em;
+                padding: 8px 30px;
+                border-radius: 8px 8px 0 0;
+                display: inline-block;
+                font-size: 12px;
+            }
+            .header-box {
+                border: 2px solid #0f172a;
+                background-color: white;
+                padding: 15px 25px;
+                border-radius: 0 0 8px 8px;
+            }
+        }
+
+        /* --- [ZONA 2] ESTILOS DE IMPRESIÓN --- */
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            html, body { background-color: white !important; margin: 0 !important; padding: 0 !important; width: 210mm !important; }
+            @page { size: A4; margin: 10mm; }
+            .no-print { display: none !important; }
+            .print-full { width: 190mm !important; margin: 0 auto !important; border: none !important; box-shadow: none !important; display: block !important; }
+            .print-description-text { display: block !important; white-space: pre-wrap !important; height: auto !important; overflow: visible !important; font-size: 10pt !important; color: black !important; text-align: left !important; }
+            textarea { display: none !important; }
+            .table-layout-fixed { display: table !important; width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+            .table-row { display: table-row !important; }
+            .table-cell { display: table-cell !important; vertical-align: top !important; }
+            .print-bg-slate { background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; }
+            .print-header-dark { background-color: #0f172a !important; color: white !important; padding: 6px 15px !important; }
+            .print-border-dark { border: 2px solid #0f172a !important; }
+            input { border: none !important; font-weight: bold !important; color: black !important; }
+            .print-no-break { page-break-inside: avoid !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 antialiased overflow-x-hidden selection:bg-indigo-100 font-black">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // 1. CONFIGURACIÓN FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6sa4vhxMC2yv2kO9PKhdXtBSV3BhFD6Q",
+            authDomain: "sistema-de-presupuestos-fsb.firebaseapp.com",
+            projectId: "sistema-de-presupuestos-fsb",
+            storageBucket: "sistema-de-presupuestos-fsb.firebasestorage.app",
+            messagingSenderId: "365707535637",
+            appId: "1:365707535637:web:e28ab3901a5f194e4df51c"
+        };
+
+        const APP_ID = 'maestranza-oficial';
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        const { useState, useMemo, useEffect, useRef } = React;
+
+        const SafeIcon = ({ name, size = 16, className = "" }) => {
+            const Lib = window.lucide || {};
+            const IconComp = Lib[name];
+            if (!IconComp) return <span style={{ width: size, height: size }} className="inline-block"></span>;
+            const iconSvg = IconComp.map(tag => {
+                const [tagName, attributes] = tag;
+                return React.createElement(tagName, attributes);
+            });
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {iconSvg}
+                </svg>
+            );
+        };
+
+        const PrintableDescription = ({ value, onChange, placeholder, className }) => {
+            const areaRef = useRef(null);
+            useEffect(() => {
+                const el = areaRef.current;
+                if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+            }, [value]);
+            return (
+                <div className="w-full">
+                    <div className="hidden print:block print-description-text text-left font-medium">{value || " "}</div>
+                    <textarea 
+                        ref={areaRef} 
+                        value={value} 
+                        onChange={onChange} 
+                        placeholder={placeholder}
+                        spellCheck="true"
+                        className={`${className} w-full block bg-transparent outline-none overflow-hidden print:hidden text-left py-1 font-medium font-black`} 
+                        rows="1" 
+                    />
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [status, setStatus] = useState("checking");
+            const [msg, setMsg] = useState(null);
+            
+            const [savedBudgets, setSavedBudgets] = useState([]);
+            const [savedClients, setSavedClients] = useState([]);
+            const [openFolders, setOpenFolders] = useState({});
+            
+            const [showConfigModal, setShowConfigModal] = useState(false);
+            const [showClientList, setShowClientList] = useState(false);
+            const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+            const [showSaveConfirmModal, setShowSaveConfirmModal] = useState(false);
+
+            const [empresa, setEmpresa] = useState({
+                nombre: "BOLPAR COMUNICACIONES",
+                ruc: "3226502-6",
+                direccion: "LIONEL TELMO GONZÁLEZ ARCE LUQUE - PARAGUAY",
+                telefono: "0985 293 177",
+                email: "INGENIERIADEPROYECTOSPY@GMAIL.COM"
+            });
+
+            const [nroPresupuesto, setNroPresupuesto] = useState("");
+            const [estado, setEstado] = useState("pendiente");
+            const [cliente, setCliente] = useState({ nombre: "", ruc: "", direccion: "", atencion: "" });
+            const [items, setItems] = useState([{ id: Date.now(), titulo: "", detalles: "", cantidad: 1, precioUnitario: 0 }]);
+            const [condiciones, setCondiciones] = useState("Plazo de entrega: A convenir.\nForma de pago: 60% entrega inicial y saldo contra entrega.");
+            const [impuestoPorcentaje, setImpuestoPorcentaje] = useState(10);
+
+            const showMsg = (text) => { setMsg(text); setTimeout(() => setMsg(null), 5000); };
+
+            const generarNro = (lista) => {
+                const year = new Date().getFullYear();
+                const prefix = `PR-${year}.`;
+                const filtradosAnio = lista.filter(b => b.nroPresupuesto && b.nroPresupuesto.startsWith(prefix));
+                let maxNum = 0;
+                filtradosAnio.forEach(b => {
+                    const parts = b.nroPresupuesto.split('.');
+                    if (parts.length > 1) {
+                        const num = parseInt(parts[1]);
+                        if (!isNaN(num) && num > maxNum) maxNum = num;
+                    }
+                });
+                return `${prefix}${(maxNum + 1).toString().padStart(4, '0')}`;
+            };
+
+            const connect = async () => {
+                try {
+                    const res = await auth.signInAnonymously();
+                    setUser(res.user);
+                    setStatus("online");
+                    return res.user;
+                } catch (e) {
+                    setStatus("offline");
+                    return null;
+                }
+            };
+
+            useEffect(() => { connect(); }, []);
+
+            useEffect(() => {
+                if (!user) return;
+                const path = `artifacts/${APP_ID}/public/data`;
+                db.doc(`${path}/configuracion/empresa`).get().then(doc => { if (doc.exists) setEmpresa(doc.data()); });
+                
+                const unsubB = db.collection(`${path}/presupuestos`).onSnapshot(snap => {
+                    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    setSavedBudgets(docs.sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0)));
+                    if (!nroPresupuesto) setNroPresupuesto(generarNro(docs));
+                });
+                
+                const unsubC = db.collection(`${path}/clientes`).onSnapshot(snap => setSavedClients(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+                return () => { unsubB(); unsubC(); };
+            }, [user]);
+
+            const groupedBudgets = useMemo(() => {
+                return savedBudgets.reduce((acc, b) => {
+                    const folder = b.cliente?.nombre || "Sin Nombre";
+                    if (!acc[folder]) acc[folder] = [];
+                    acc[folder].push(b);
+                    return acc;
+                }, {});
+            }, [savedBudgets]);
+
+            const totales = useMemo(() => {
+                const total = items.reduce((acc, curr) => acc + (Number(curr.cantidad) * (Number(curr.precioUnitario) || 0)), 0);
+                const divisor = 1 + (impuestoPorcentaje / 100);
+                const neto = Math.round(total / divisor);
+                return { neto, iva: total - neto, total };
+            }, [items, impuestoPorcentaje]);
+
+            const stats = useMemo(() => ({
+                total: savedBudgets.reduce((acc, b) => acc + (Number(b.total) || 0), 0),
+                pendientes: savedBudgets.filter(b => b.estado === 'pendiente').length,
+                aprobados: savedBudgets.filter(b => b.estado === 'aprobado').length
+            }), [savedBudgets]);
+
+            const suggestedClients = useMemo(() => {
+                if (!cliente.nombre || cliente.nombre.length < 1) return [];
+                return savedClients.filter(c => c.nombre.toLowerCase().includes(cliente.nombre.toLowerCase())).slice(0, 5);
+            }, [cliente.nombre, savedClients]);
+
+            // LÓGICA DE GUARDADO DEFINITIVA
+            const executeSave = async (targetNro) => {
+                try {
+                    const docId = targetNro.replace(/\s+/g, '-').toLowerCase();
+                    await db.doc(`artifacts/${APP_ID}/public/data/presupuestos/${docId}`).set({
+                        empresa, nroPresupuesto: targetNro, estado, cliente, items, condiciones, impuestoPorcentaje, 
+                        updatedAt: Date.now(), total: totales.total 
+                    });
+                    
+                    const clientId = cliente.nombre.replace(/\s+/g, '-').toLowerCase();
+                    await db.doc(`artifacts/${APP_ID}/public/data/clientes/${clientId}`).set({ ...cliente, updatedAt: Date.now() });
+                    
+                    showMsg("✅ Guardado con Estado: " + estado.toUpperCase());
+                    setShowSaveConfirmModal(false);
+                    
+                    // Solo generamos el siguiente número si guardamos como uno nuevo o si estábamos en uno nuevo
+                    if (targetNro !== nroPresupuesto) {
+                        setNroPresupuesto(targetNro);
+                    }
+                } catch (e) { showMsg("❌ Error Firebase"); }
+            };
+
+            const handleSaveClick = () => {
+                if (!user) { showMsg("❌ Sin Conexión"); return; }
+                const exists = savedBudgets.some(b => b.nroPresupuesto === nroPresupuesto);
+                if (exists) {
+                    setShowSaveConfirmModal(true);
+                } else {
+                    executeSave(nroPresupuesto);
+                }
+            };
+
+            const confirmDelete = async () => {
+                if (!deleteConfirmId) return;
+                try {
+                    await db.doc(`artifacts/${APP_ID}/public/data/presupuestos/${deleteConfirmId}`).delete();
+                    setDeleteConfirmId(null);
+                    showMsg("🗑️ Presupuesto Eliminado");
+                } catch (e) { showMsg("❌ Error al borrar"); }
+            };
+
+            const formatMoneda = (val) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(val);
+            const actualizarItem = (id, campo, valor) => setItems(items.map(i => i.id === id ? { ...i, [campo]: valor } : i));
+
+            const loadBudget = (b) => {
+                setNroPresupuesto(b.nroPresupuesto);
+                setEstado(b.estado || "pendiente");
+                setCliente(b.cliente);
+                setItems(b.items);
+                setCondiciones(b.condiciones);
+                setImpuestoPorcentaje(b.impuestoPorcentaje);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            return (
+                <div className="min-h-screen pb-10 bg-slate-100 flex flex-col items-center">
+                    <nav className="w-full sticky top-0 z-50 bg-white border-b border-slate-200 px-6 py-2 no-print flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-6">
+                            <div className="text-left font-black">
+                                <h1 className="text-sm font-black text-slate-900 uppercase tracking-tighter">Bolpar v6.9.2 Platinum</h1>
+                                <div className="flex items-center gap-1.5 mt-0.5 font-black">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${status === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-rose-500 animate-pulse'}`}></div>
+                                    <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">{status === 'online' ? 'Sincronizado' : 'Offline'}</span>
+                                </div>
+                            </div>
+                            <div className="flex gap-1 border-l pl-6 border-slate-200">
+                                <button onClick={() => { setCliente({nombre:"", ruc:"", direccion:"", atencion:""}); setNroPresupuesto(generarNro(savedBudgets)); setItems([{id:Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0}]); setEstado("pendiente"); }} className="text-xs font-black text-slate-500 hover:text-indigo-600 p-2 flex items-center gap-1.5 transition-all uppercase"><SafeIcon name="FilePlus" size={14} /> Nuevo</button>
+                                <button onClick={() => setShowConfigModal(true)} className="text-xs font-bold text-slate-500 hover:text-indigo-600 p-2 flex items-center gap-1.5 transition-all uppercase"><SafeIcon name="Settings" size={14} /> Empresa</button>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="flex bg-slate-100 rounded-xl p-1 shadow-inner mr-2">
+                                {['pendiente', 'aprobado', 'rechazado'].map(e => (
+                                    <button key={e} onClick={() => setEstado(e)} className={`px-4 py-1 text-[10px] font-black rounded uppercase transition-all ${estado === e ? 'bg-white text-indigo-600 shadow-sm scale-105' : 'text-slate-400'}`}>{e}</button>
+                                ))}
+                            </div>
+                            {msg && <span className="text-[10px] bg-slate-800 text-white px-4 py-1.5 rounded-full font-bold fade-in shadow-lg">{msg}</span>}
+                            <button onClick={handleSaveClick} className="bg-indigo-600 text-white px-6 py-2 rounded-xl flex items-center gap-2 text-xs font-bold shadow-md hover:bg-indigo-700 transition-all font-black"><SafeIcon name="Save" size={14} /> Guardar</button>
+                            <button onClick={() => window.print()} className="bg-slate-800 text-white px-6 py-2 rounded-xl flex items-center gap-2 text-xs font-bold shadow-md hover:bg-slate-700 transition-all font-black"><SafeIcon name="Printer" size={14} /> PDF</button>
+                        </div>
+                    </nav>
+
+                    <div className="w-full max-w-7xl px-6 pt-6 flex flex-col lg:flex-row gap-8 font-black">
+                        <aside className="lg:w-80 shrink-0 no-print space-y-6 text-left text-slate-900 font-black">
+                            <div className="bg-slate-900 text-white rounded-3xl p-6 shadow-2xl">
+                                <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2"><SafeIcon name="BarChart3" size={12} className="text-indigo-400" /> RESUMEN</h2>
+                                <div className="space-y-4">
+                                    <div><p className="text-[10px] text-slate-400 uppercase mb-1">Monto en Base</p><p className="text-2xl tracking-tighter font-black">{formatMoneda(stats.total)}</p></div>
+                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10 text-center">
+                                        <div><p className="text-[9px] text-amber-500 uppercase">Pend.</p><p className="text-lg">{stats.pendientes}</p></div>
+                                        <div><p className="text-[9px] text-emerald-500 uppercase">Aprob.</p><p className="text-lg">{stats.aprobados}</p></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm max-h-[60vh] flex flex-col overflow-hidden">
+                                <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 font-black font-black"><SafeIcon name="FolderOpen" size={12} /> PRESUPUESTOS GUARDADOS</h2>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2 font-black">
+                                    {Object.entries(groupedBudgets).map(([folderName, budgets]) => (
+                                        <div key={folderName} className="space-y-1">
+                                            <button onClick={() => setOpenFolders(p => ({...p, [folderName]: !p[folderName]}))} className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all group">
+                                                <div className="flex items-center gap-2 truncate font-black">
+                                                    <SafeIcon name={openFolders[folderName] ? "FolderOpen" : "Folder"} size={14} className="text-indigo-400" />
+                                                    <span className="text-[11px] uppercase truncate max-w-[150px] font-black">{folderName}</span>
+                                                </div>
+                                                <span className="text-[9px] bg-white px-2 py-0.5 rounded-full border border-slate-200 font-bold">{budgets.length}</span>
+                                            </button>
+                                            {openFolders[folderName] && (
+                                                <div className="pl-4 space-y-1 fade-in font-black">
+                                                    {budgets.map(b => (
+                                                        <div key={b.id} className="relative group/item flex items-center">
+                                                            <div onClick={() => loadBudget(b)} className={`flex-1 p-3 rounded-xl border border-slate-50 hover:border-indigo-100 hover:bg-white cursor-pointer transition-all flex flex-col border-l-4 ${b.estado === 'aprobado' ? 'border-l-emerald-500' : b.estado === 'rechazado' ? 'border-l-rose-500' : 'border-l-amber-500'}`}>
+                                                                <div className="flex items-center gap-1.5 mb-0.5 font-black">
+                                                                    <div className={`w-1.5 h-1.5 rounded-full ${b.estado === 'aprobado' ? 'bg-emerald-500' : b.estado === 'rechazado' ? 'bg-rose-500' : 'bg-amber-500'}`}></div>
+                                                                    <p className="font-bold text-[10px] text-slate-800 uppercase">{b.nroPresupuesto}</p>
+                                                                </div>
+                                                                <p className="text-[11px] font-black text-indigo-600">{formatMoneda(b.total)}</p>
+                                                            </div>
+                                                            <button onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(b.id); }} className="absolute right-2 p-1.5 text-slate-200 hover:text-rose-500 opacity-0 group-hover/item:opacity-100 transition-opacity"><SafeIcon name="Trash2" size={14} /></button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </aside>
+
+                        <main className="flex-1 font-black">
+                            <div className="bg-white shadow-2xl border border-slate-200 print-full flex flex-col min-h-[1050px] rounded-b-3xl overflow-hidden font-black font-black">
+                                <div className="p-8 md:p-12 flex-1 flex flex-col font-black">
+                                    <div className="table-layout-fixed w-full border-b-2 border-slate-900 pb-8 mb-10 text-left font-black">
+                                        <div className="table-row font-black">
+                                            <div className="table-cell font-black" style={{ width: '60%' }}>
+                                                <div className="flex items-start gap-5 font-black font-black">
+                                                    <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl font-black"><SafeIcon name="Factory" size={36}/></div>
+                                                    <div className="space-y-1.5 text-slate-900 font-black">
+                                                        <p className="text-2xl uppercase tracking-tight leading-none font-black">{empresa.nombre}</p>
+                                                        <div className="text-slate-500 text-[10px] font-bold uppercase tracking-tight font-black">
+                                                            <div>RUC: {empresa.ruc}</div>
+                                                            <div>{empresa.direccion}</div>
+                                                            <div>Tel: {empresa.telefono} | Email: {empresa.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="table-cell text-right" style={{ width: '40%' }}>
+                                                <div className="flex flex-col items-end">
+                                                    <div className="header-tab">PRESUPUESTO</div>
+                                                    <div className={`header-box min-w-[240px] text-right font-black ${estado === 'aprobado' ? 'border-emerald-600' : estado === 'rechazado' ? 'border-rose-600' : 'border-[#0f172a]'}`}>
+                                                        <label className="text-[9px] text-slate-400 font-black uppercase block tracking-widest mb-1">DOCUMENTO NRO.</label>
+                                                        <input spellCheck="true" className="text-xl font-mono font-black text-right outline-none w-full bg-transparent border-b border-transparent focus:border-indigo-400" value={nroPresupuesto} onChange={e => setNroPresupuesto(e.target.value)}/>
+                                                        <p className="text-[10px] text-slate-800 mt-2 font-black uppercase tracking-widest text-right font-black">{new Date().toLocaleDateString('es-PY', {day:'numeric', month:'long', year:'numeric'})}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-12 bg-slate-50 rounded-3xl border border-slate-200 relative shadow-sm text-left overflow-hidden print-bg-slate font-black">
+                                        <div className="table-layout-fixed w-full">
+                                            <div className="table-row">
+                                                <div className="table-cell p-8 relative" style={{ width: '50%', borderRight: '1px solid #e2e8f0' }}>
+                                                    <h3 className="text-[10px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.2em] mb-6 font-black"><SafeIcon name="User" size={12} /> IDENTIFICACIÓN CLIENTE</h3>
+                                                    <div className="space-y-5">
+                                                        <div className="flex flex-col relative font-black">
+                                                            <label className="text-[9px] text-slate-400 uppercase mb-1.5 ml-1 tracking-wider font-bold">Nombre / Razón Social</label>
+                                                            <input className="w-full font-black text-slate-900 bg-white/70 px-3 py-2 rounded-xl border border-slate-100 outline-none text-xs focus:border-indigo-400 transition-all font-black" value={cliente.nombre} spellCheck="true" onFocus={() => setShowClientList(true)} onChange={e => { setCliente({...cliente, nombre: e.target.value}); setShowClientList(true); }}/>
+                                                            {showClientList && suggestedClients.length > 0 && (
+                                                                <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden no-print font-black">
+                                                                    {suggestedClients.map(c => (
+                                                                        <div key={c.id} onClick={() => { setCliente(c); setShowClientList(false); }} className="p-3 hover:bg-indigo-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors"><p className="text-xs font-black text-slate-800 uppercase font-black">{c.nombre}</p><p className="text-[9px] text-slate-400 font-bold font-black">RUC: {c.ruc}</p></div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {showClientList && <div className="fixed inset-0 z-40 no-print" onClick={() => setShowClientList(false)}></div>}
+                                                        </div>
+                                                        <div className="flex flex-col mt-2 font-black font-black"><label className="text-[9px] text-slate-400 uppercase mb-1.5 ml-1 tracking-wider font-bold font-black">RUC / C.I.</label><input spellCheck="false" className="w-full text-xs font-black text-slate-600 bg-white/50 px-3 py-2 rounded-xl border border-slate-100 outline-none focus:border-indigo-400 transition-all font-black" value={cliente.ruc} onChange={e => setCliente({...cliente, ruc: e.target.value})}/></div>
+                                                    </div>
+                                                </div>
+                                                <div className="table-cell p-8" style={{ width: '50%' }}>
+                                                    <h3 className="text-[10px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.2em] mb-6 font-black font-black font-black font-black font-black"><SafeIcon name="MapPin" size={12} /> LOGÍSTICA Y ATENCIÓN</h3>
+                                                    <div className="space-y-5 font-black">
+                                                        <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase mb-1.5 ml-1 tracking-wider font-bold font-black font-black">Dirección de Obra / Local</label><input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-2 rounded-xl border border-slate-100 outline-none focus:border-indigo-400 transition-all font-black font-black" value={cliente.direccion} onChange={e => setCliente({...cliente, direccion: e.target.value})}/></div>
+                                                        <div className="flex flex-col mt-2 font-black font-black font-black"><label className="text-[9px] text-slate-400 uppercase mb-1.5 ml-1 tracking-wider font-bold font-black font-black font-black">Atención a</label><input spellCheck="true" className="w-full font-bold text-slate-800 bg-white/70 px-3 py-2 rounded-xl border border-slate-100 outline-none focus:border-indigo-400 transition-all font-black font-black" value={cliente.atencion} onChange={e => setCliente({...cliente, atencion: e.target.value})}/></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-12 flex-1 overflow-x-auto text-left text-slate-900 font-black">
+                                        <table className="w-full border-collapse font-black">
+                                            <thead>
+                                                <tr className="border-b-2 border-slate-900 text-slate-900 uppercase text-[10px] tracking-widest font-black font-black">
+                                                    <th className="py-4 w-10 text-center font-black font-black">#</th>
+                                                    <th className="py-4 pl-4 text-left font-black" style={{ width: '60%' }}>Especificación Técnica del Trabajo</th>
+                                                    <th className="py-4 w-16 text-center font-black">Cant.</th>
+                                                    <th className="py-4 w-32 text-right px-3 font-black">Unitario</th>
+                                                    <th className="py-4 w-36 text-right pr-4 font-black">Total</th>
+                                                    <th className="py-4 w-10 no-print font-black font-black font-black"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 font-black">
+                                                {items.map((item, idx) => (
+                                                    <tr key={item.id} className="align-top group print-no-break font-black">
+                                                        <td className="py-6 text-[11px] text-slate-400 font-mono text-center pt-8">{idx + 1}</td>
+                                                        <td className="py-6 pl-4 pr-6 pt-5 font-black">
+                                                            <div className="flex flex-col gap-1.5 font-black">
+                                                                <input spellCheck="true" className="outline-none font-black text-slate-900 text-[13px] bg-transparent uppercase tracking-tight font-black font-black font-black" placeholder="Título..." value={item.titulo} onChange={e => actualizarItem(item.id, 'titulo', e.target.value)}/>
+                                                                <div className="flex gap-3 items-start pl-3 border-l-4 border-indigo-100 font-black">
+                                                                    <PrintableDescription value={item.detalles} onChange={e => actualizarItem(item.id, 'detalles', e.target.value)} placeholder="Descripción técnica..." className="text-[11px] text-slate-600 italic bg-transparent leading-relaxed text-left font-medium font-black" />
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-6 pt-8 text-center font-black text-xs px-1 font-black font-black"><input type="number" className="w-full text-center outline-none bg-transparent font-black" value={item.cantidad} onChange={e => actualizarItem(item.id, 'cantidad', parseFloat(e.target.value) || 0)}/></td>
+                                                        <td className="py-6 pt-8 text-right font-black text-xs px-1 font-black font-black"><input type="number" className="w-full text-right outline-none bg-transparent font-black" value={item.precioUnitario} onChange={e => actualizarItem(item.id, 'precioUnitario', parseFloat(e.target.value) || 0)}/></td>
+                                                        <td className="py-6 pt-8 pr-4 text-right font-black text-slate-900 text-sm tracking-tighter font-black">{formatMoneda(item.cantidad * item.precioUnitario)}</td>
+                                                        <td className="py-6 text-center no-print pt-8 font-black font-black"><button onClick={() => setItems(items.filter(it => it.id !== item.id))} className="text-slate-200 hover:text-rose-500 p-2 transition-colors font-black"><SafeIcon name="Trash2" size={16}/></button></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        <button onClick={() => setItems([...items, {id: Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0}])} className="mt-8 no-print bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase shadow-lg flex items-center gap-2 font-black font-black font-black font-black font-black font-black font-black"><SafeIcon name="Plus" size={16}/>  Agregar Trabajo</button>
+                                    </div>
+
+                                    <div className="mt-auto text-left print-no-break pt-10 border-t-2 border-slate-900 font-black font-black font-black">
+                                        <div className={`w-full h-[2cm] min-h-[80px] mb-10 text-white rounded-lg shadow-xl flex items-center px-10 transition-all font-black print-header-dark ${estado === 'aprobado' ? 'bg-emerald-600' : estado === 'rechazado' ? 'bg-rose-600' : 'bg-[#0f172a]'}`}>
+                                            <div className="flex-1 flex items-center gap-16 font-black font-black font-black">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-black uppercase opacity-60 tracking-widest font-black">SUBTOTAL NETO</span>
+                                                    <span className="text-base font-mono font-black font-black">{formatMoneda(totales.neto)}</span>
+                                                </div>
+                                                <div className="flex flex-col font-black font-black font-black">
+                                                    <span className="text-[11px] font-black uppercase opacity-60 tracking-widest font-black font-black">IVA INCL. (10%)</span>
+                                                    <span className="text-base font-mono font-black">{formatMoneda(totales.iva)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-right flex flex-col items-end gap-0.5 font-black font-black font-black font-black font-black">
+                                                <span className="text-[12px] uppercase tracking-[0.5em] opacity-80 font-black font-black font-black font-black">TOTAL GENERAL</span>
+                                                <span className="text-3xl font-black tracking-tighter leading-none whitespace-nowrap drop-shadow-md pr-2 font-black font-black">{formatMoneda(totales.total)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="w-full space-y-4 mb-16 font-black font-black font-black font-black font-black font-black font-black font-black">
+                                            <h3 className="text-[10px] text-slate-400 uppercase flex items-center gap-2 tracking-[0.2em] font-black font-black font-black font-black font-black"><SafeIcon name="CreditCard" size={12} className="text-indigo-600" /> CONDICIONES Y PLAZOS COMERCIALES</h3>
+                                            <textarea spellCheck="true" className="w-full min-h-24 p-6 bg-slate-50 border border-slate-200 rounded-3xl text-[11px] text-slate-600 outline-none focus:border-indigo-300 print-bg-slate font-medium font-black" value={condiciones} onChange={e => setCondiciones(e.target.value)}/>
+                                        </div>
+                                        <div className="table-layout-fixed w-full pt-16 text-center font-black font-black font-black font-black font-black">
+                                            <div className="table-row font-black font-black">
+                                                <div className="table-cell font-black font-black" style={{ width: '50%', padding: '0 40px' }}><div className="border-t-2 border-slate-300 w-full mb-2 font-black font-black"></div><p className="text-[10px] uppercase text-slate-900 font-black">Firma y Sello Emisor</p><p className="text-[8px] font-bold uppercase text-slate-400 tracking-[0.1em] font-black font-black">{empresa.nombre}</p></div>
+                                                <div className="table-cell font-black font-black" style={{ width: '50%', padding: '0 40px' }}><div className="border-t-2 border-slate-300 w-full mb-2 font-black"></div><p className="text-[10px] uppercase text-slate-800 font-black font-black">Conformidad del Cliente</p><p className="text-[8px] font-bold uppercase text-slate-400 tracking-[0.1em] font-black font-black font-black font-black">{cliente.nombre || "Firma del Cliente"}</p></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+
+                    {/* MODAL CONFIRMACIÓN GUARDADO (CONFLICTO) */}
+                    {showSaveConfirmModal && (
+                        <div className="fixed inset-0 z-[110] bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-6 no-print font-black">
+                            <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-md w-full text-center space-y-6 animate-fade-in font-black">
+                                <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto font-black"><SafeIcon name="AlertCircle" size={32}/></div>
+                                <div>
+                                    <h3 className="font-black uppercase text-sm tracking-widest text-slate-800">El Presupuesto ya existe</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold mt-2 leading-relaxed uppercase">¿Qué acción deseas realizar con el documento {nroPresupuesto}?</p>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3 font-black">
+                                    <button onClick={() => executeSave(nroPresupuesto)} className="py-4 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all font-black font-black">Actualizar Existente (Sobrescribir)</button>
+                                    <button onClick={() => executeSave(generarNro(savedBudgets))} className="py-4 bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase hover:bg-slate-900 transition-all font-black font-black">Guardar como Copia Nueva ({generarNro(savedBudgets)})</button>
+                                    <button onClick={() => setShowSaveConfirmModal(false)} className="py-2 text-[10px] font-black uppercase text-slate-400 hover:text-slate-600 font-black font-black font-black">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {deleteConfirmId && (
+                        <div className="fixed inset-0 z-[110] bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-6 no-print">
+                            <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full text-center space-y-6 animate-fade-in font-black font-black">
+                                <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto font-black font-black font-black"><SafeIcon name="AlertTriangle" size={32}/></div>
+                                <div><h3 className="font-black uppercase text-sm tracking-widest text-slate-800 font-black">¿Eliminar Presupuesto?</h3><p className="text-[10px] text-slate-500 font-bold mt-2 leading-relaxed uppercase font-black font-black">Esta acción borrará el registro de la base de datos de forma permanente.</p></div>
+                                <div className="grid grid-cols-2 gap-3 font-black font-black font-black font-black"><button onClick={() => setDeleteConfirmId(null)} className="py-3 bg-slate-100 rounded-xl text-[10px] font-black uppercase hover:bg-slate-200 transition-all font-black font-black">Cancelar</button><button onClick={confirmDelete} className="py-3 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-rose-100 font-black font-black">Sí, Eliminar</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showConfigModal && (
+                        <div className="fixed inset-0 z-[100] bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-6 no-print text-left animate-fade-in font-black">
+                            <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden p-8 space-y-6 border border-white font-black font-black font-black font-black font-black">
+                                <div className="flex justify-between items-center border-b pb-6 font-black font-black font-black font-black"><h3 className="font-black uppercase flex items-center gap-3 tracking-widest text-lg font-black font-black font-black font-black font-black font-black font-black"><SafeIcon name="Settings" size={24} className="text-indigo-600"/> Mi Empresa</h3><button onClick={()=>setShowConfigModal(false)} className="p-2 hover:bg-rose-50 rounded-full transition-all text-slate-400 hover:text-rose-500 font-black font-black font-black font-black font-black font-black"><SafeIcon name="X" size={28}/></button></div>
+                                <div className="space-y-5 font-black text-slate-900 font-black font-black font-black">
+                                    {['nombre', 'ruc', 'direccion', 'telefono', 'email'].map(f => (
+                                        <div key={f}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5 tracking-widest font-bold font-black font-black">{f}</label><input spellCheck="true" className="w-full border border-slate-200 px-4 py-3 rounded-2xl text-sm outline-none focus:border-indigo-400 transition-all font-medium text-slate-900 font-black font-black font-black font-black" value={empresa[f]} onChange={e => setEmpresa({...empresa, [f]: e.target.value.toUpperCase()})}/></div>
+                                    ))}
+                                </div>
+                                <button onClick={async () => { await db.doc(`artifacts/${APP_ID}/public/data/configuracion/empresa`).set(empresa); setShowConfigModal(false); showMsg("✅ Datos Actualizados"); }} className="w-full bg-indigo-600 text-white font-black py-5 rounded-[2rem] shadow-xl hover:bg-indigo-700 transition-all uppercase text-sm font-bold tracking-widest font-black font-black font-black font-black font-black">Guardar Datos Permanentes</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
