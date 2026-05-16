@@ -671,37 +671,53 @@
                                             </div>
                                         </div>
 
-                                        {/* IDENTIFICACIÓN CLIENTE */}
-                                        <div className="mb-6 bg-slate-50 rounded-2xl border border-slate-200 p-5 text-left print-bg-slate font-black print-compact-box">
-                                            <div className="table-layout-fixed w-full">
-                                                <div className="table-row">
-                                                    <div className="table-cell pr-6" style={{ width: '50%', borderRight: '1px solid #e2e8f0' }}>
-                                                        <h3 className="text-[9px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.15em] mb-3"><SafeIcon name="User" size={10} /> Destinatario</h3>
-                                                        <div className="space-y-2 relative">
-                                                            <div className="flex flex-col">
-                                                                <label className="text-[8px] text-slate-400 uppercase font-black">Cliente</label>
-                                                                <input className="w-full text-xs font-black text-slate-900 bg-white/70 px-2 py-1 rounded-lg border outline-none" value={cliente.nombre} spellCheck="true" onFocus={() => setShowClientList(true)} onChange={e => setCliente({...cliente, nombre: e.target.value})}/>
-                                                                {showClientList && suggestedClients.length > 0 && (
-                                                                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden no-print">
-                                                                        {suggestedClients.map(c => (
-                                                                            <div key={c.id} onClick={() => { setCliente({ nombre: c.nombre, ruc: c.ruc || "", direccion: c.direccion || "", atencion: c.atencion || "" }); setShowClientList(false); }} className="p-2 hover:bg-indigo-50 cursor-pointer border-b last:border-0"><p className="text-xs font-black uppercase text-slate-900">{c.nombre}</p></div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">RUC</label><input className="w-full text-xs font-black bg-white/50 px-2 py-0.5 rounded border" value={cliente.ruc} onChange={e => setCliente({...cliente, ruc: e.target.value})}/></div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="table-cell pl-6" style={{ width: '50%' }}>
-                                                        <h3 className="text-[9px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.15em] mb-3"><SafeIcon name="MapPin" size={10} /> Logística</h3>
-                                                        <div className="space-y-2">
-                                                            <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Obra</label><input spellCheck="true" className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={cliente.direccion} onChange={e => setCliente({...cliente, direccion: e.target.value})}/></div>
-                                                            <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Atención</label><input spellCheck="true" className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={cliente.atencion} onChange={e => setCliente({...cliente, atencion: e.target.value})}/></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        {/* IDENTIFICACIÓN CLIENTE 50/50 */}
+<div className="mb-10 bg-slate-50 rounded-3xl border border-slate-200 p-8 text-left print-bg-slate font-black relative group/cliente">
+    <div className="table-layout-fixed w-full font-black">
+        <div className="table-row">
+            {/* Columna Izquierda: CLIENTE */}
+            <div className="table-cell pr-8 relative font-black" style={{ width: '50%', borderRight: '1px solid #e2e8f0' }}>
+                <h3 className="text-[10px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.2em] mb-6 font-black"><SafeIcon name="User" size={12} /> CLIENTE</h3>
+                <div className="space-y-4 font-black">
+                    <div className="flex flex-col relative font-black">
+                        <label className="text-[9px] text-slate-400 uppercase font-black mb-1">Nombre / Razón Social</label>
+                        <input className="w-full font-black text-slate-900 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none text-xs focus:border-indigo-400 font-black" value={cliente.nombre} spellCheck="true" onFocus={() => setShowClientList(true)} onChange={e => { setCliente({...cliente, nombre: e.target.value}); setShowClientList(true); }}/>
+                        {showClientList && suggestedClients.length > 0 && (
+                            <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden no-print">
+                                {suggestedClients.map(c => (
+                                    <div key={c.id} onClick={() => { setCliente({ nombre: c.nombre, ruc: c.ruc || "", direccion: c.direccion || "", atencion: c.atencion || "", vendedor: c.vendedor || "", telefono: c.telefono || "", email: c.email || "" }); setShowClientList(false); }} className="p-3 hover:bg-indigo-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors"><p className="text-xs font-black text-slate-800 uppercase">{c.nombre}</p><p className="text-[9px] text-slate-400 font-bold">RUC: {c.ruc}</p></div>
+                                ))}
+                            </div>
+                        )}
+                        {showClientList && <div className="fixed inset-0 z-40 no-print" onClick={() => setShowClientList(false)}></div>}
+                    </div>
+                    <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">RUC / C.I.</label><input className="w-full text-xs font-black text-slate-600 bg-white/50 px-3 py-1.5 rounded border border-slate-100 outline-none" value={cliente.ruc} onChange={e => setCliente({...cliente, ruc: e.target.value})}/></div>
+                    <div className="flex flex-col font-black">
+                        <label className="text-[9px] text-slate-400 uppercase font-black mb-1">Teléfono</label>
+                        <input className="w-full text-xs font-black text-slate-600 bg-white/50 px-3 py-1.5 rounded border border-slate-100 outline-none" value={cliente.telefono || ""} onChange={e => setCliente({...cliente, telefono: e.target.value})}/>
+                    </div>
+                </div>
+            </div>
+
+            {/* Columna Derecha: TRASLADO / ENTREGA */}
+            <div className="table-cell pl-8 font-black" style={{ width: '50%' }}>
+                <h3 className="text-[10px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.2em] mb-6 font-black"><SafeIcon name="MapPin" size={12} /> TRASLADO / ENTREGA</h3>
+                <div className="space-y-4">
+                    <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">Dirección de Obra</label><input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.direccion} onChange={e => setCliente({...cliente, direccion: e.target.value})}/></div>
+                    <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">Atención a</label><input spellCheck="true" className="w-full font-bold text-slate-800 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.atencion} onChange={e => setCliente({...cliente, atencion: e.target.value})}/></div>
+                    <div className="flex flex-col font-black">
+                        <label className="text-[9px] text-slate-400 uppercase font-black mb-1">Vendedor</label>
+                        <input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.vendedor || ""} onChange={e => setCliente({...cliente, vendedor: e.target.value.toUpperCase()})}/>
+                    </div>
+                    <div className="flex flex-col font-black">
+                        <label className="text-[9px] text-slate-400 uppercase font-black mb-1">Correo Electrónico</label>
+                        <input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.email || ""} onChange={e => setCliente({...cliente, email: e.target.value.toLowerCase()})}/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
                                         {/* TABLA DE TRABAJOS */}
                                         <div className="mb-6 flex-1">
