@@ -3,15 +3,16 @@ const path = require('path');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 
+// Configuración de logs para ver si hay errores al actualizar
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 
+// Conexión con tu cuenta de GitHub real
 autoUpdater.setFeedURL({
   provider: 'github',
   owner: 'franciscosotelob-creator',
   repo: 'sistema-de-presupuestos'
 });
-
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -19,18 +20,20 @@ function createWindow() {
     icon: path.join(__dirname, 'icon.ico'),
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false, 
-      spellcheck: true         
+      contextIsolation: false, // Necesario para Firebase directo
+      spellcheck: true         // Corrector ortográfico en español
     }
   });
 
   win.maximize();
   win.loadFile('index.html');
 
+  // Al iniciar la app, busca si subiste código nuevo a GitHub
   win.once('ready-to-show', () => {
     autoUpdater.checkForUpdatesAndNotify();
   });
 
+  // Menú del clic derecho (Copiar, Pegar, Ortografía)
   win.webContents.on('context-menu', (event, params) => {
     const menu = new Menu();
 
@@ -55,6 +58,7 @@ function createWindow() {
   });
 }
 
+// Cuando detecta y termina de descargar una nueva actualización de GitHub
 autoUpdater.on('update-downloaded', () => {
   dialog.showMessageBox({
     type: 'info',

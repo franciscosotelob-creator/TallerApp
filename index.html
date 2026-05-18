@@ -26,6 +26,8 @@
     </script>
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
+        
         @media screen {
             .custom-scrollbar::-webkit-scrollbar { width: 4px; }
             .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -67,7 +69,6 @@
             .no-print { display: none !important; }
             .print-full { width: 194mm !important; margin: 0 auto !important; border: none !important; box-shadow: none !important; }
             
-            /* Ajuste maestro de texto largo para descripciones y condiciones en el papel */
             .print-text { 
                 display: block !important; 
                 white-space: pre-wrap !important; 
@@ -111,7 +112,6 @@
             .print-compact-gap { gap: 8px !important; }
             .print-compact-py { padding-top: 6px !important; padding-bottom: 6px !important; }
             .print-h-box { height: 1.5cm !important; min-height: 60px !important; margin-bottom: 12px !important; padding-left: 20px !important; padding-right: 20px !important; }
-            .print-signature-row { pt: 30px !important; }
         }
     </style>
 </head>
@@ -222,12 +222,13 @@
                 ruc: "3226502-6",
                 direccion: "LIONEL TELMO GONZÁLEZ ARCE LUQUE - PARAGUAY",
                 telefono: "0985 293 177",
-                email: "INGENIERIADEPROYECTOSPY@GMAIL.COM"
+                email: "INGENIERIADEPROYECTOSPY@GMAIL.COM",
+                logoUrl: ""
             });
 
             const [nroPresupuesto, setNroPresupuesto] = useState("");
             const [estado, setEstado] = useState("pendiente");
-            const [cliente, setCliente] = useState({ nombre: "", ruc: "", direccion: "", atencion: "" });
+            const [cliente, setCliente] = useState({ nombre: "", ruc: "", direccion: "", atencion: "", vendedor: "", telefono: "", email: "" });
             
             const [items, setItems] = useState([{ 
                 id: Date.now(), 
@@ -313,6 +314,20 @@
             useEffect(() => {
                 if (!user) return;
                 
+                const unsubConfig = db.collection('artifacts').doc(APP_ID).collection('public').doc('config_empresa').onSnapshot(doc => {
+                    if (doc.exists) {
+                        const d = doc.data();
+                        setEmpresa(prev => ({
+                            nombre: d.nombre || prev.nombre,
+                            ruc: d.ruc || prev.ruc,
+                            direccion: d.direccion || prev.direccion,
+                            telefono: d.telefono || prev.telefono,
+                            email: d.email || prev.email,
+                            logoUrl: d.logoUrl || ""
+                        }));
+                    }
+                });
+
                 const path = `artifacts/${APP_ID}/public/data/presupuestos`;
                 const unsub = db.collection(path).onSnapshot(snap => {
                     const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -328,7 +343,7 @@
                     setSavedRemisiones(docs.sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0)));
                 });
 
-                return () => { unsub(); unsubC(); unsubR(); };
+                return () => { unsubConfig(); unsub(); unsubC(); unsubR(); };
             }, [user]);
 
             useEffect(() => {
@@ -361,6 +376,14 @@
                     setUser(null);
                     setStatus("offline");
                 });
+            };
+
+            const guardandoConfigEmpresa = async (e) => {
+                e.preventDefault();
+                try {
+                    await db.collection('artifacts').doc(APP_ID).collection('public').doc('config_empresa').set(empresa);
+                    showMsg("💼 Datos de Empresa Guardados");
+                } catch(err) { showMsg("❌ Error al guardar datos"); }
             };
 
             const suggestedClients = useMemo(() => {
@@ -515,18 +538,18 @@
                         <div className="bg-slate-800 border-2 border-slate-700 p-8 rounded-[2.5rem] shadow-2xl max-w-md w-full space-y-6 text-left fade-in">
                             <div className="text-center">
                                 <div className="w-16 h-16 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto text-white mb-4 shadow-lg"><SafeIcon name="Lock" size={32}/></div>
-                                <h1 className="text-xl font-black uppercase tracking-wider font-black">Sistema de Presupuesto</h1>
+                                <h1 className="text-xl font-black uppercase tracking-wider">Sistema de Presupuesto</h1>
                                 <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Ingreso Protegido</p>
                             </div>
 
                             <form onSubmit={handleLogin} className="space-y-4">
                                 <div className="flex flex-col">
                                     <label className="text-[9px] uppercase tracking-wider text-slate-400 mb-1">Correo Electrónico</label>
-                                    <input type="email" required className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-indigo-500 font-mono" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="correo@ejemplo.com"/>
+                                    <input type="email" required className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-indigo-500 font-mono text-slate-200" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="correo@ejemplo.com"/>
                                 </div>
                                 <div className="flex flex-col">
                                     <label className="text-[9px] uppercase tracking-wider text-slate-400 mb-1">Contraseña</label>
-                                    <input type="password" required className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-indigo-500 font-mono" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••"/>
+                                    <input type="password" required className="bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-indigo-500 font-mono text-slate-200" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••"/>
                                 </div>
                                 {loginError && <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 p-3 rounded-xl text-[10px] uppercase font-bold text-center">{loginError}</div>}
                                 <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 transition-all rounded-xl text-xs uppercase font-black tracking-widest text-white shadow-xl">Ingresar</button>
@@ -550,13 +573,14 @@
                             </div>
                             <div className="flex gap-2 border-l border-slate-200 pl-4">
                                 <button onClick={() => setVistaActiva('presupuestos')} className={`text-xs font-black px-4 py-1.5 rounded-xl uppercase flex items-center gap-2 transition-all ${vistaActiva === 'presupuestos' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}><SafeIcon name="FileText" size={14} /> Presupuestos</button>
-                                <button onClick={() => setVistaActiva('remisiones')} className={`text-xs font-black px-4 py-1.5 rounded-xl uppercase flex items-center gap-2 transition-all ${vistaActiva === 'remisiones' ? 'bg-amber-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}><SafeIcon name="Truck" size={14} /> Remisiones</button>
+                                <button onClick={() => setVistaActiva('remisiones')} className={`text-xs font-black px-4 py-1.5 rounded-xl uppercase flex items-center gap-2 transition-all ${vistaActiva === 'remisiones' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}><SafeIcon name="Truck" size={14} /> Remisiones</button>
+                                <button onClick={() => setVistaActiva('configuracion')} className={`text-xs font-black px-4 py-1.5 rounded-xl uppercase flex items-center gap-2 transition-all ${vistaActiva === 'configuracion' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}><SafeIcon name="Sliders" size={14} /> Configuración</button>
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
-                            {vistaActiva === 'presupuestos' ? (
+                            {vistaActiva === 'presupuestos' && (
                                 <>
-                                    <button onClick={() => { setCliente({nombre:"", ruc:"", direccion:"", atencion:""}); setNroPresupuesto(generarNro(savedBudgets)); setItems([{id:Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0, pesoKg:0, precioKg:0, insumos:0, diasTrabajados:0, costoDia:250000, margenDeseado:30}]); }} className="text-xs font-black text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 uppercase transition-all"><SafeIcon name="FilePlus" size={14} /> Nuevo</button>
+                                    <button onClick={() => { setCliente({nombre:"", ruc:"", direccion:"", atencion:"", vendedor:"", telefono:"", email:""}); setNroPresupuesto(generarNro(savedBudgets)); setItems([{id:Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0, pesoKg:0, precioKg:0, insumos:0, diasTrabajados:0, costoDia:250000, margenDeseado:30}]); }} className="text-xs font-black text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 uppercase transition-all"><SafeIcon name="FilePlus" size={14} /> Nuevo</button>
                                     <div className="hidden md:flex bg-slate-900 text-white px-4 py-1.5 rounded-xl items-center gap-6 border border-slate-700 shadow-inner">
                                         <div className="flex flex-col"><span className="text-[7px] text-slate-400 uppercase">Costo Real</span><span className="text-[10px] font-mono">{formatMoneda(totales.costoTotal)}</span></div>
                                         <div className="flex flex-col"><span className="text-[7px] text-slate-400 uppercase">Utilidad</span><span className={`text-[10px] font-mono ${totales.margenActual > 30 ? 'text-emerald-400' : 'text-amber-400'}`}>{formatMoneda(totales.total - totales.costoTotal)}</span></div>
@@ -567,15 +591,18 @@
                                             <button key={e} onClick={() => setEstado(e)} className={`px-4 py-1 text-[10px] font-black rounded uppercase transition-all ${estado === e ? 'bg-white text-indigo-600 shadow-sm scale-105' : 'text-slate-400'}`}>{e}</button>
                                         ))}
                                     </div>
-                                    <button onClick={() => { const exists = savedBudgets.some(b => b.nroPresupuesto === nroPresupuesto); if (exists) setShowSaveConfirmModal(true); else executeSave(nroPresupuesto); }} className="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all font-black">Guardar</button>
+                                    <button onClick={() => { const exists = savedBudgets.some(b => b.nroPresupuesto === nroPresupuesto); if (exists) setShowSaveConfirmModal(true); else executeSave(nroPresupuesto); }} className="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-indigo-700 transition-all font-black font-black">Guardar</button>
                                 </>
-                            ) : (
+                            )}
+                            {vistaActiva === 'remisiones' && (
                                 <>
-                                    <button onClick={() => { setCliente({nombre:"", ruc:"", direccion:"", atencion:""}); setNroRemision(generarNroRemision(savedRemisiones)); setRemisionItems([{id:Date.now(), descripcion:"", cantidad:1, unidadMedida:"UNIDAD", pesoTotalKg:0}]); setRemisionDatos(p => ({...p, comprobanteVenta:"", facturaManual:""})); }} className="text-xs font-black text-slate-500 hover:text-amber-600 flex items-center gap-1.5 uppercase transition-all"><SafeIcon name="FilePlus" size={14} /> Nueva Remisión</button>
+                                    <button onClick={() => { setCliente({nombre:"", ruc:"", direccion:"", atencion:"", vendedor:"", telefono:"", email:""}); setNroRemision(generarNroRemision(savedRemisiones)); setRemisionItems([{id:Date.now(), descripcion:"", cantidad:1, indigoMedida:"UNIDAD", pesoTotalKg:0}]); setRemisionDatos(p => ({...p, comprobanteVenta:"", facturaManual:""})); }} className="text-xs font-black text-slate-500 hover:text-amber-600 flex items-center gap-1.5 uppercase transition-all"><SafeIcon name="FilePlus" size={14} /> Nueva Remisión</button>
                                     <button onClick={executeSaveRemision} className="bg-amber-600 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-amber-700 transition-all font-black">Guardar Remisión</button>
                                 </>
                             )}
-                            <button onClick={() => window.print()} className="bg-slate-800 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-slate-700 transition-all font-black"><SafeIcon name="Printer" size={14} /> PDF / Imprimir</button>
+                            {vistaActiva !== 'configuracion' && (
+                                <button onClick={() => window.print()} className="bg-slate-800 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-slate-700 transition-all font-black"><SafeIcon name="Printer" size={14} /> PDF / Imprimir</button>
+                            )}
                             <button onClick={handleLogout} className="text-slate-400 hover:text-rose-500 p-2 rounded-lg" title="Cerrar Sesión"><SafeIcon name="LogOut" size={16}/></button>
                         </div>
                     </nav>
@@ -586,412 +613,429 @@
                     <div className="w-full max-w-7xl px-6 pt-6 flex flex-col lg:flex-row gap-8 font-black">
                         
                         {/* BARRA LATERAL */}
-                        <aside className="lg:w-80 shrink-0 no-print space-y-6 text-left font-black">
-                            {vistaActiva === 'presupuestos' ? (
-                                <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm max-h-[80vh] flex flex-col overflow-hidden font-black animate-fadeIn">
-                                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><SafeIcon name="FolderOpen" size={12} /> Presupuestos</h2>
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
-                                        {Object.entries(groupedBudgets).map(([folder, budgets]) => (
-                                            <div key={folder} className="space-y-1 font-black">
-                                                <button onClick={() => setOpenFolders(p => ({...p, [folder]: !p[folder]}))} className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all font-black">
-                                                    <div className="flex items-center gap-2 truncate uppercase text-[11px] font-black"><SafeIcon name={openFolders[folder] ? "FolderOpen" : "Folder"} size={14} className="text-indigo-400" />{folder}</div>
-                                                    <span className="text-[9px] bg-white px-2 py-0.5 rounded-full border border-slate-200 font-bold">{budgets.length}</span>
-                                                </button>
-                                                {openFolders[folder] && budgets.map(b => (
-                                                    <div key={b.id} className="relative group/budgetItem">
-                                                        <div onClick={() => { setNroPresupuesto(b.nroPresupuesto); setEstado(b.estado); setCliente(b.cliente); setItems(b.items); setCondiciones(b.condiciones); window.scrollTo({top:0, behavior:'smooth'}); }} className={`ml-4 p-3 rounded-xl border border-slate-50 hover:bg-white cursor-pointer transition-all border-l-4 ${b.estado === 'aprobado' ? 'border-l-emerald-500' : b.estado === 'rechazado' ? 'border-l-rose-500' : 'border-l-amber-500'}`}>
-                                                            <p className="font-bold text-[10px] text-slate-800 uppercase tracking-tighter">{b.nroPresupuesto}</p>
-                                                            <p className="text-[11px] font-black text-indigo-600 font-mono">{formatMoneda(b.total)}</p>
+                        {vistaActiva !== 'configuracion' && (
+                            <aside className="lg:w-80 shrink-0 no-print space-y-6 text-left font-black">
+                                {vistaActiva === 'presupuestos' ? (
+                                    <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm max-h-[80vh] flex flex-col overflow-hidden font-black animate-fadeIn">
+                                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><SafeIcon name="FolderOpen" size={12} /> Presupuestos</h2>
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+                                            {Object.entries(groupedBudgets).map(([folder, budgets]) => (
+                                                <div key={folder} className="space-y-1 font-black">
+                                                    <button onClick={() => setOpenFolders(p => ({...p, [folder]: !p[folder]}))} className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-indigo-50 rounded-2xl transition-all font-black">
+                                                        <div className="flex items-center gap-2 truncate uppercase text-[11px] font-black"><SafeIcon name={openFolders[folder] ? "FolderOpen" : "Folder"} size={14} className="text-indigo-400" />{folder}</div>
+                                                        <span className="text-[9px] bg-white px-2 py-0.5 rounded-full border border-slate-200 font-bold">{budgets.length}</span>
+                                                    </button>
+                                                    {openFolders[folder] && budgets.map(b => (
+                                                        <div key={b.id} className="relative group/budgetItem">
+                                                            <div onClick={() => { setNroPresupuesto(b.nroPresupuesto); setEstado(b.estado); setCliente(b.cliente); setItems(b.items); setCondiciones(b.condiciones); window.scrollTo({top:0, behavior:'smooth'}); }} className={`ml-4 p-3 rounded-xl border border-slate-50 hover:bg-white cursor-pointer transition-all border-l-4 ${b.estado === 'aprobado' ? 'border-l-emerald-500' : b.estado === 'rechazado' ? 'border-l-rose-500' : 'border-l-amber-500'}`}>
+                                                                <p className="font-bold text-[10px] text-slate-800 uppercase tracking-tighter">{b.nroPresupuesto}</p>
+                                                                <p className="text-[11px] font-black text-indigo-600 font-mono">{formatMoneda(b.total)}</p>
+                                                            </div>
+                                                            {b.estado === 'aprobado' && (
+                                                                <button onClick={(e) => { e.stopPropagation(); setVistaActiva('remisiones'); importarPresupuestoARemision(b); }} className="absolute right-2 top-2 no-print bg-amber-50 hover:bg-amber-500 hover:text-white text-amber-600 rounded-lg p-1.5 text-[8px] border border-amber-200 transition-all uppercase" title="Emitir Remisión"><SafeIcon name="Truck" size={10} /></button>
+                                                            )}
                                                         </div>
-                                                        {b.estado === 'aprobado' && (
-                                                            <button onClick={(e) => { e.stopPropagation(); setVistaActiva('remisiones'); importarPresupuestoARemision(b); }} className="absolute right-2 top-2 no-print bg-amber-50 hover:bg-amber-500 hover:text-white text-amber-600 rounded-lg p-1.5 text-[8px] border border-amber-200 transition-all uppercase" title="Emitir Remisión"><SafeIcon name="Truck" size={10} /></button>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ))}
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm max-h-[80vh] flex flex-col overflow-hidden font-black animate-fadeIn">
-                                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><SafeIcon name="FolderOpen" size={12} /> Notas de Remisión</h2>
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
-                                        {Object.entries(groupedRemisiones).map(([folder, remisiones]) => (
-                                            <div key={folder} className="space-y-1">
-                                                <button onClick={() => setOpenRemisionesFolders(p => ({...p, [folder]: !p[folder]}))} className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-amber-50 rounded-2xl transition-all font-black">
-                                                    <div className="flex items-center gap-2 truncate uppercase text-[11px] font-black"><SafeIcon name={openRemisionesFolders[folder] ? "FolderOpen" : "Folder"} size={14} className="text-amber-400" />{folder}</div>
-                                                    <span className="text-[9px] bg-white px-2 py-0.5 rounded-full border border-slate-200 font-bold">{remisiones.length}</span>
-                                                </button>
-                                                {openRemisionesFolders[folder] && remisiones.map(r => (
-                                                    <div key={r.id} onClick={() => { setNroRemision(r.nroRemision); setCliente(r.cliente); setRemisionDatos(r.remisionDatos); setRemisionItems(r.items); window.scrollTo({top:0, behavior:'smooth'}); }} className="ml-4 p-3 rounded-xl border border-slate-50 hover:bg-white cursor-pointer transition-all border-l-4 border-l-amber-500">
-                                                        <p className="font-bold text-[10px] text-slate-800 uppercase tracking-tighter">{r.nroRemision}</p>
-                                                        {r.remisionDatos?.facturaManual && <p className="text-[9px] text-emerald-600 font-bold uppercase">Factura: {r.remisionDatos.facturaManual}</p>}
-                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Fecha: {r.remisionDatos?.fechaEmision}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ))}
+                                ) : (
+                                    <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm max-h-[80vh] flex flex-col overflow-hidden font-black animate-fadeIn">
+                                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><SafeIcon name="FolderOpen" size={12} /> Notas de Remisión</h2>
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+                                            {Object.entries(groupedRemisiones).map(([folder, remisiones]) => (
+                                                <div key={folder} className="space-y-1">
+                                                    <button onClick={() => setOpenRemisionesFolders(p => ({...p, [folder]: !p[folder]}))} className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-amber-50 rounded-2xl transition-all font-black">
+                                                        <div className="flex items-center gap-2 truncate uppercase text-[11px] font-black"><SafeIcon name={openRemisionesFolders[folder] ? "FolderOpen" : "Folder"} size={14} className="text-amber-400" />{folder}</div>
+                                                        <span className="text-[9px] bg-white px-2 py-0.5 rounded-full border border-slate-200 font-bold">{remisiones.length}</span>
+                                                    </button>
+                                                    {openRemisionesFolders[folder] && remisiones.map(r => (
+                                                        <div key={r.id} onClick={() => { setNroRemision(r.nroRemision); setCliente(r.cliente); setRemisionDatos(r.remisionDatos); setRemisionItems(r.items); window.scrollTo({top:0, behavior:'smooth'}); }} className="ml-4 p-3 rounded-xl border border-slate-50 hover:bg-white cursor-pointer transition-all border-l-4 border-l-amber-500">
+                                                            <p className="font-bold text-[10px] text-slate-800 uppercase tracking-tighter">{r.nroRemision}</p>
+                                                            {r.remisionDatos?.facturaManual && <p className="text-[9px] text-emerald-600 font-bold uppercase">Factura: {r.remisionDatos.facturaManual}</p>}
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Fecha: {r.remisionDatos?.fechaEmision}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </aside>
+                                )}
+                            </aside>
+                        )}
 
-                        {/* HOJA IMPRIMIBLE COMPACTADA */}
-                        <main className="flex-1 font-black">
-                            
-                            {/* PESTAÑA: PRESUPUESTO */}
-                            {vistaActiva === 'presupuestos' && (
-                                <div className="bg-white shadow-2xl border border-slate-200 print-full flex flex-col min-h-[1050px] rounded-b-3xl overflow-hidden font-black animate-fadeIn">
-                                    <div className="p-6 md:p-8 flex-1 flex flex-col font-black">
-                                        {/* ENCABEZADO */}
-                                        <div className="table-layout-fixed w-full border-b-2 border-slate-900 pb-4 mb-6 text-left font-black">
-                                            <div className="table-row">
-                                                <div className="table-cell" style={{ width: '60%' }}>
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl"><SafeIcon name="Factory" size={28}/></div>
-                                                        <div className="space-y-0.5 text-slate-900 font-black">
-                                                            <p className="text-xl uppercase tracking-tight leading-none font-black">{empresa.nombre}</p>
-                                                            <div className="text-slate-500 text-[9px] font-bold uppercase leading-tight">
-                                                                <div>RUC: {empresa.ruc} | {empresa.direccion}</div>
-                                                                <div>Tel: {empresa.telefono}</div>
+                        {/* HOJA IMPRIMIBLE */}
+                        {vistaActiva !== 'configuracion' ? (
+                            <main className="flex-1 font-black">
+                                
+                                {/* PESTAÑA: PRESUPUESTO */}
+                                {vistaActiva === 'presupuestos' && (
+                                    <div className="bg-white shadow-2xl border border-slate-200 print-full flex flex-col min-h-[1050px] rounded-3xl overflow-hidden font-black animate-fadeIn">
+                                        <div className="p-6 md:p-8 flex-1 flex flex-col font-black">
+                                            {/* ENCABEZADO */}
+                                            <div className="table-layout-fixed w-full border-b-2 border-slate-900 pb-4 mb-6 text-left font-black">
+                                                <div className="table-row">
+                                                    <div className="table-cell" style={{ width: '60%' }}>
+                                                        <div className="flex items-start gap-4">
+                                                            {empresa.logoUrl ? (
+                                                                <img src={empresa.logoUrl} className="w-14 h-14 object-contain rounded-xl" alt="Logo"/>
+                                                            ) : (
+                                                                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl"><SafeIcon name="Factory" size={28}/></div>
+                                                            )}
+                                                            <div className="space-y-0.5 text-slate-900 font-black">
+                                                                <p className="text-xl uppercase tracking-tight leading-none font-black">{empresa.nombre}</p>
+                                                                <div className="text-slate-500 text-[9px] font-bold uppercase leading-tight">
+                                                                    <div>RUC: {empresa.ruc} | {empresa.direccion}</div>
+                                                                    <div>Tel: {empresa.telefono} | {empresa.email}</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="table-cell text-right" style={{ width: '40%' }}>
+                                                        <div className="flex flex-col items-end">
+                                                            <div className="header-tab !py-1 !px-5 text-[10px]">Presupuesto</div>
+                                                            <div className={`header-box !py-2 !px-4 min-w-[200px] text-right ${estado === 'aprobado' ? 'border-emerald-600' : estado === 'rechazado' ? 'border-rose-600' : 'border-[#0f172a]'}`}>
+                                                                <label className="text-[8px] text-slate-400 font-black uppercase block tracking-widest mb-0.5">Nro.</label>
+                                                                <input className="text-base font-mono font-black text-right outline-none w-full bg-transparent" value={nroPresupuesto} onChange={e => setNroPresupuesto(e.target.value)}/>
+                                                                <p className="text-[9px] text-slate-800 font-mono text-right mt-0.5">{new Date().toLocaleDateString('es-PY', {day:'numeric', month:'long', year:'numeric'})}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="table-cell text-right" style={{ width: '40%' }}>
-                                                    <div className="flex flex-col items-end">
-                                                        <div className="header-tab !py-1 !px-5 text-[10px]">Presupuesto</div>
-                                                        <div className={`header-box !py-2 !px-4 min-w-[200px] text-right ${estado === 'aprobado' ? 'border-emerald-600' : estado === 'rechazado' ? 'border-rose-600' : 'border-[#0f172a]'}`}>
-                                                            <label className="text-[8px] text-slate-400 font-black uppercase block tracking-widest mb-0.5">Nro.</label>
-                                                            <input className="text-base font-mono font-black text-right outline-none w-full bg-transparent" value={nroPresupuesto} onChange={e => setNroPresupuesto(e.target.value)}/>
-                                                            <p className="text-[9px] text-slate-800 font-mono text-right mt-0.5">{new Date().toLocaleDateString('es-PY', {day:'numeric', month:'long', year:'numeric'})}</p>
+                                            </div>
+
+                                            {/* IDENTIFICACIÓN CLIENTE 50/50 */}
+                                            <div className="mb-10 bg-slate-50 rounded-3xl border border-slate-200 p-8 text-left print-bg-slate font-black relative group/cliente">
+                                                <div className="table-layout-fixed w-full font-black">
+                                                    <div className="table-row">
+                                                        <div className="table-cell pr-8 relative font-black" style={{ width: '50%', borderRight: '1px solid #e2e8f0' }}>
+                                                            <h3 className="text-[10px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.2em] mb-6 font-black"><SafeIcon name="User" size={12} /> CLIENTE</h3>
+                                                            <div className="space-y-4 font-black">
+                                                                <div className="flex flex-col relative font-black">
+                                                                    <label className="text-[9px] text-slate-400 uppercase font-black mb-1">Nombre / Razón Social</label>
+                                                                    <input className="w-full font-black text-slate-900 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none text-xs focus:border-indigo-400 font-black" value={cliente.nombre} spellCheck="true" onFocus={() => setShowClientList(true)} onChange={e => { setCliente({...cliente, nombre: e.target.value}); setShowClientList(true); }}/>
+                                                                    {showClientList && suggestedClients.length > 0 && (
+                                                                        <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden no-print">
+                                                                            {suggestedClients.map(c => (
+                                                                                <div key={c.id} onClick={() => { setCliente({ nombre: c.nombre, ruc: c.ruc || "", direccion: c.direccion || "", atencion: c.atencion || "", vendedor: c.vendedor || "", telefono: c.telefono || "", email: c.email || "" }); setShowClientList(false); }} className="p-3 hover:bg-indigo-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors"><p className="text-xs font-black text-slate-800 uppercase">{c.nombre}</p><p className="text-[9px] text-slate-400 font-bold">RUC: {c.ruc}</p></div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                    {showClientList && <div className="fixed inset-0 z-40 no-print" onClick={() => setShowClientList(false)}></div>}
+                                                                </div>
+                                                                <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">RUC / C.I.</label><input className="w-full text-xs font-black text-slate-600 bg-white/50 px-3 py-1.5 rounded border border-slate-100 outline-none" value={cliente.ruc} onChange={e => setCliente({...cliente, ruc: e.target.value})}/></div>
+                                                                <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">Teléfono</label><input className="w-full text-xs font-black text-slate-600 bg-white/50 px-3 py-1.5 rounded border border-slate-100 outline-none" value={cliente.telefono || ""} onChange={e => setCliente({...cliente, telefono: e.target.value})}/></div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="table-cell pl-8 font-black" style={{ width: '50%' }}>
+                                                            <h3 className="text-[10px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.2em] mb-6 font-black"><SafeIcon name="MapPin" size={12} /> TRASLADO / ENTREGA</h3>
+                                                            <div className="space-y-4">
+                                                                <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">Dirección de Obra</label><input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.direccion} onChange={e => setCliente({...cliente, direccion: e.target.value})}/></div>
+                                                                <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">Atención a</label><input spellCheck="true" className="w-full font-bold text-slate-800 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.atencion} onChange={e => setCliente({...cliente, atencion: e.target.value})}/></div>
+                                                                <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">Vendedor</label><input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.vendedor || ""} onChange={e => setCliente({...cliente, vendedor: e.target.value.toUpperCase()})}/></div>
+                                                                <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">Correo Electrónico</label><input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.email || ""} onChange={e => setCliente({...cliente, email: e.target.value.toLowerCase()})}/></div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* IDENTIFICACIÓN CLIENTE 50/50 */}
-<div className="mb-10 bg-slate-50 rounded-3xl border border-slate-200 p-8 text-left print-bg-slate font-black relative group/cliente">
-    <div className="table-layout-fixed w-full font-black">
-        <div className="table-row">
-            {/* Columna Izquierda: CLIENTE */}
-            <div className="table-cell pr-8 relative font-black" style={{ width: '50%', borderRight: '1px solid #e2e8f0' }}>
-                <h3 className="text-[10px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.2em] mb-6 font-black"><SafeIcon name="User" size={12} /> CLIENTE</h3>
-                <div className="space-y-4 font-black">
-                    <div className="flex flex-col relative font-black">
-                        <label className="text-[9px] text-slate-400 uppercase font-black mb-1">Nombre / Razón Social</label>
-                        <input className="w-full font-black text-slate-900 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none text-xs focus:border-indigo-400 font-black" value={cliente.nombre} spellCheck="true" onFocus={() => setShowClientList(true)} onChange={e => { setCliente({...cliente, nombre: e.target.value}); setShowClientList(true); }}/>
-                        {showClientList && suggestedClients.length > 0 && (
-                            <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden no-print">
-                                {suggestedClients.map(c => (
-                                    <div key={c.id} onClick={() => { setCliente({ nombre: c.nombre, ruc: c.ruc || "", direccion: c.direccion || "", atencion: c.atencion || "", vendedor: c.vendedor || "", telefono: c.telefono || "", email: c.email || "" }); setShowClientList(false); }} className="p-3 hover:bg-indigo-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors"><p className="text-xs font-black text-slate-800 uppercase">{c.nombre}</p><p className="text-[9px] text-slate-400 font-bold">RUC: {c.ruc}</p></div>
-                                ))}
-                            </div>
-                        )}
-                        {showClientList && <div className="fixed inset-0 z-40 no-print" onClick={() => setShowClientList(false)}></div>}
-                    </div>
-                    <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">RUC / C.I.</label><input className="w-full text-xs font-black text-slate-600 bg-white/50 px-3 py-1.5 rounded border border-slate-100 outline-none" value={cliente.ruc} onChange={e => setCliente({...cliente, ruc: e.target.value})}/></div>
-                    <div className="flex flex-col font-black">
-                        <label className="text-[9px] text-slate-400 uppercase font-black mb-1">Teléfono</label>
-                        <input className="w-full text-xs font-black text-slate-600 bg-white/50 px-3 py-1.5 rounded border border-slate-100 outline-none" value={cliente.telefono || ""} onChange={e => setCliente({...cliente, telefono: e.target.value})}/>
-                    </div>
-                </div>
-            </div>
-
-            {/* Columna Derecha: TRASLADO / ENTREGA */}
-            <div className="table-cell pl-8 font-black" style={{ width: '50%' }}>
-                <h3 className="text-[10px] text-indigo-600 uppercase flex items-center gap-2 tracking-[0.2em] mb-6 font-black"><SafeIcon name="MapPin" size={12} /> TRASLADO / ENTREGA</h3>
-                <div className="space-y-4">
-                    <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">Dirección de Obra</label><input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.direccion} onChange={e => setCliente({...cliente, direccion: e.target.value})}/></div>
-                    <div className="flex flex-col font-black"><label className="text-[9px] text-slate-400 uppercase font-black mb-1">Atención a</label><input spellCheck="true" className="w-full font-bold text-slate-800 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.atencion} onChange={e => setCliente({...cliente, atencion: e.target.value})}/></div>
-                    <div className="flex flex-col font-black">
-                        <label className="text-[9px] text-slate-400 uppercase font-black mb-1">Vendedor</label>
-                        <input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.vendedor || ""} onChange={e => setCliente({...cliente, vendedor: e.target.value.toUpperCase()})}/>
-                    </div>
-                    <div className="flex flex-col font-black">
-                        <label className="text-[9px] text-slate-400 uppercase font-black mb-1">Correo Electrónico</label>
-                        <input spellCheck="true" className="w-full text-xs font-black text-slate-600 bg-white/70 px-3 py-1.5 rounded-xl border border-slate-100 outline-none font-black" value={cliente.email || ""} onChange={e => setCliente({...cliente, email: e.target.value.toLowerCase()})}/>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-                                        {/* TABLA DE TRABAJOS */}
-                                        <div className="mb-6 flex-1">
-                                            <table className="w-full border-collapse table-layout-fixed">
-                                                <thead>
-                                                    <tr className="border-b border-slate-900 text-slate-900 uppercase text-[9px] tracking-widest">
-                                                        <th className="py-2 w-8 text-center">#</th>
-                                                        <th className="py-2 pl-2 text-left" style={{ width: '55%' }}>Trabajo</th>
-                                                        <th className="py-2 w-12 text-center">Cant.</th>
-                                                        <th className="py-2 w-28 text-right px-2">Unitario</th>
-                                                        <th className="py-2 w-32 text-right pr-2">Total</th>
-                                                        <th className="py-2 w-8 no-print"></th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100 text-[11px]">
-                                                    {items.map((item, idx) => (
-                                                        <React.Fragment key={item.id}>
-                                                            <tr className="align-top print-no-break print-compact-py">
-                                                                <td className="py-2 text-[10px] text-slate-400 font-mono text-center pt-3">{idx + 1}</td>
-                                                                <td className="py-2 pl-2 pr-4 pt-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <AutoResizeTextarea isTitle={true} placeholder="Título..." value={item.titulo} className="flex-1 font-black text-slate-900 text-[11px] uppercase tracking-tight" onChange={e => actualizarItem(item.id, 'titulo', e.target.value)}/>
-                                                                        <button onClick={() => setExpandedCosts(p => ({...p, [item.id]: !p[item.id]}))} className="no-print p-1 bg-slate-100 rounded text-slate-400 hover:text-indigo-600 shadow-sm" title="Costos"><SafeIcon name="Cog" size={12}/></button>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="py-2 pt-3 text-center px-1"><input type="number" className="w-full text-center outline-none bg-transparent font-mono" value={item.cantidad} onChange={e => actualizarItem(item.id, 'cantidad', parseFloat(e.target.value) || 0)}/></td>
-                                                                <td className="py-2 pt-3 text-right px-1"><NumericInput value={item.precioUnitario} className="w-full text-right outline-none bg-transparent font-mono" onChange={val => actualizarItem(item.id, 'precioUnitario', val)}/></td>
-                                                                <td className="py-2 pt-3 pr-2 text-right font-black text-slate-900 font-mono tracking-tighter">{formatMoneda(item.cantidad * item.precioUnitario)}</td>
-                                                                <td className="py-2 text-center no-print pt-3"><button onClick={() => setItems(items.filter(it => it.id !== item.id))} className="text-slate-200 hover:text-rose-500"><SafeIcon name="Trash2" size={14}/></button></td>
-                                                            </tr>
-                                                            <tr className="align-top">
-                                                                <td></td>
-                                                                <td colSpan="4" className="pl-2 pb-3 pt-0">
-                                                                    <div className="border-l-2 border-indigo-100 pl-2">
-                                                                        <AutoResizeTextarea placeholder="Detalles de la estructura..." value={item.detalles} className="text-[10px] text-slate-500 italic font-medium" onChange={e => actualizarItem(item.id, 'detalles', e.target.value)}/>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="no-print"></td>
-                                                            </tr>
-                                                            {expandedCosts[item.id] && (
-                                                                <tr className="no-print bg-slate-50">
-                                                                    <td colSpan="6" className="p-4 border-l-4 border-l-indigo-600">
-                                                                        <div className="cost-panel !p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-                                                                            <div className="text-left">
-                                                                                <label className="text-[8px] text-slate-400 block uppercase">Peso Total KG</label>
-                                                                                <input type="number" className="w-full bg-white border p-1 rounded font-mono" value={item.pesoKg} onChange={e => actualizarItem(item.id, 'pesoKg', e.target.value)}/>
-                                                                                <label className="text-[8px] text-slate-400 block uppercase mt-2">Precio por KG</label>
-                                                                                <NumericInput className="w-full bg-white border p-1 rounded font-mono" value={item.precioKg} onChange={val => actualizarItem(item.id, 'precioKg', val)}/>
-                                                                            </div>
-                                                                            <div className="text-left">
-                                                                                <label className="text-[8px] text-slate-400 block uppercase">Consumibles</label>
-                                                                                <NumericInput className="w-full bg-white border p-1 rounded font-mono" value={item.insumos} onChange={val => actualizarItem(item.id, 'insumos', val)}/>
-                                                                                <label className="text-[8px] text-indigo-400 block uppercase mt-2">Utilidad %</label>
-                                                                                <input type="number" className="w-full bg-indigo-50 border border-indigo-200 p-1 rounded font-mono" value={item.margenDeseado} onChange={e => actualizarItem(item.id, 'margenDeseado', e.target.value)}/>
-                                                                            </div>
-                                                                            <div className="text-left">
-                                                                                <label className="text-[8px] text-slate-400 block uppercase">Días Trabajados</label>
-                                                                                <input type="number" className="w-full bg-white border p-1 rounded font-mono" value={item.diasTrabajados} onChange={e => actualizarItem(item.id, 'diasTrabajados', e.target.value)}/>
-                                                                                <label className="text-[8px] text-slate-400 block uppercase mt-2">Costo Día</label>
-                                                                                <NumericInput className="w-full bg-white border p-1 rounded font-mono" value={item.costoDia} onChange={val => actualizarItem(item.id, 'costoDia', val)}/>
-                                                                            </div>
-                                                                            <div className="bg-slate-900 text-white rounded-xl p-3 flex flex-col justify-center text-left">
-                                                                                <span className="text-[7px] opacity-70 uppercase">Costo Unitario Directo</span>
-                                                                                <span className="text-xs font-mono font-black">{formatMoneda((item.pesoKg * item.precioKg) + (item.diasTrabajados * item.costoDia) + Number(item.insumos))}</span>
-                                                                                <div className="border-t border-white/20 pt-1 mt-1">
-                                                                                    <span className="text-[7px] opacity-70 uppercase">Sugerido ({item.margenDeseado}%)</span>
-                                                                                    <div className="text-xs font-black text-indigo-300 font-mono">
-                                                                                        {formatMoneda(Math.round(((item.pesoKg * item.precioKg) + (item.diasTrabajados * item.costoDia) + Number(item.insumos)) / (1 - (Number(item.margenDeseado) / 100))))}
+                                            {/* TABLA DE TRABAJOS */}
+                                            <div className="mb-6 flex-1">
+                                                <table className="w-full border-collapse table-layout-fixed">
+                                                    <thead>
+                                                        <tr className="border-b border-slate-900 text-slate-900 uppercase text-[9px] tracking-widest">
+                                                            <th className="py-2 w-8 text-center">#</th>
+                                                            <th className="py-2 pl-2 text-left" style={{ width: '55%' }}>Trabajo</th>
+                                                            <th className="py-2 w-12 text-center">Cant.</th>
+                                                            <th className="py-2 w-28 text-right px-2">Unitario</th>
+                                                            <th className="py-2 w-32 text-right pr-2">Total</th>
+                                                            <th className="py-2 w-8 no-print"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100 text-[11px]">
+                                                        {items.map((item, idx) => (
+                                                            <React.Fragment key={item.id}>
+                                                                <tr className="align-top print-no-break print-compact-py">
+                                                                    <td className="py-2 text-[10px] text-slate-400 font-mono text-center pt-3">{idx + 1}</td>
+                                                                    <td className="py-2 pl-2 pr-4 pt-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <AutoResizeTextarea isTitle={true} placeholder="Título..." value={item.titulo} className="flex-1 font-black text-slate-900 text-[11px] uppercase tracking-tight" onChange={e => actualizarItem(item.id, 'titulo', e.target.value)}/>
+                                                                            <button onClick={() => setExpandedCosts(p => ({...p, [item.id]: !p[item.id]}))} className="no-print p-1 bg-slate-100 rounded text-slate-400 hover:text-indigo-600 shadow-sm" title="Costos"><SafeIcon name="Cog" size={12}/></button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="py-2 pt-3 text-center px-1"><input type="number" className="w-full text-center outline-none bg-transparent font-mono" value={item.cantidad} onChange={e => actualizarItem(item.id, 'cantidad', parseFloat(e.target.value) || 0)}/></td>
+                                                                    <td className="py-2 pt-3 text-right px-1"><NumericInput value={item.precioUnitario} className="w-full text-right outline-none bg-transparent font-mono" onChange={val => actualizarItem(item.id, 'precioUnitario', val)}/></td>
+                                                                    <td className="py-2 pt-3 pr-2 text-right font-black text-slate-900 font-mono tracking-tighter">{formatMoneda(item.cantidad * item.precioUnitario)}</td>
+                                                                    <td className="py-2 text-center no-print pt-3"><button onClick={() => setItems(items.filter(it => it.id !== item.id))} className="text-slate-200 hover:text-rose-500"><SafeIcon name="Trash2" size={14}/></button></td>
+                                                                </tr>
+                                                                <tr className="align-top">
+                                                                    <td></td>
+                                                                    <td colSpan="4" className="pl-2 pb-3 pt-0">
+                                                                        <div className="border-l-2 border-indigo-100 pl-2">
+                                                                            <AutoResizeTextarea placeholder="Detalles de la estructura..." value={item.detalles} className="text-[10px] text-slate-500 italic font-medium" onChange={e => actualizarItem(item.id, 'detalles', e.target.value)}/>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="no-print"></td>
+                                                                </tr>
+                                                                {expandedCosts[item.id] && (
+                                                                    <tr className="no-print bg-slate-50">
+                                                                        <td colSpan="6" className="p-4 border-l-4 border-l-indigo-600">
+                                                                            <div className="cost-panel !p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                                                <div className="text-left">
+                                                                                    <label className="text-[8px] text-slate-400 block uppercase">Peso Total KG</label>
+                                                                                    <input type="number" className="w-full bg-white border p-1 rounded font-mono" value={item.pesoKg} onChange={e => actualizarItem(item.id, 'pesoKg', e.target.value)}/>
+                                                                                    <label className="text-[8px] text-slate-400 block uppercase mt-2">Precio por KG</label>
+                                                                                    <NumericInput className="w-full bg-white border p-1 rounded font-mono" value={item.precioKg} onChange={val => actualizarItem(item.id, 'precioKg', val)}/>
+                                                                                </div>
+                                                                                <div className="text-left">
+                                                                                    <label className="text-[8px] text-slate-400 block uppercase">Consumibles</label>
+                                                                                    <NumericInput className="w-full bg-white border p-1 rounded font-mono" value={item.insumos} onChange={val => actualizarItem(item.id, 'insumos', val)}/>
+                                                                                    <label className="text-[8px] text-indigo-400 block uppercase mt-2">Utilidad %</label>
+                                                                                    <input type="number" className="w-full bg-indigo-50 border border-indigo-200 p-1 rounded font-mono" value={item.margenDeseado} onChange={e => actualizarItem(item.id, 'margenDeseado', e.target.value)}/>
+                                                                                </div>
+                                                                                <div className="text-left">
+                                                                                    <label className="text-[8px] text-slate-400 block uppercase">Días Trabajados</label>
+                                                                                    <input type="number" className="w-full bg-white border p-1 rounded font-mono" value={item.diasTrabajados} onChange={e => actualizarItem(item.id, 'diasTrabajados', e.target.value)}/>
+                                                                                    <label className="text-[8px] text-slate-400 block uppercase mt-2">Costo Día</label>
+                                                                                    <NumericInput className="w-full bg-white border p-1 rounded font-mono" value={item.costoDia} onChange={val => actualizarItem(item.id, 'costoDia', val)}/>
+                                                                                </div>
+                                                                                <div className="bg-slate-900 text-white rounded-xl p-3 flex flex-col justify-center text-left">
+                                                                                    <span className="text-[7px] opacity-70 uppercase">Costo Unitario Directo</span>
+                                                                                    <span className="text-xs font-mono font-black">{formatMoneda((item.pesoKg * item.precioKg) + (item.diasTrabajados * item.costoDia) + Number(item.insumos))}</span>
+                                                                                    <div className="border-t border-white/20 pt-1 mt-1">
+                                                                                        <span className="text-[7px] opacity-70 uppercase">Sugerido ({item.margenDeseado}%)</span>
+                                                                                        <div className="text-xs font-black text-indigo-300 font-mono">
+                                                                                            {formatMoneda(Math.round(((item.pesoKg * item.precioKg) + (item.diasTrabajados * item.costoDia) + Number(item.insumos)) / (1 - (Number(item.margenDeseado) / 100))))}
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            )}
-                                                        </React.Fragment>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                            <button onClick={() => setItems([...items, {id: Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0, pesoKg:0, precioKg:0, insumos:0, diasTrabajados:0, costoDia:250000, margenDeseado:30}])} className="mt-4 no-print bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] uppercase shadow flex items-center gap-2"><SafeIcon name="Plus" size={14}/> Agregar Trabajo</button>
-                                        </div>
-
-                                        {/* PIE DE PRESUPUESTO */}
-                                        <div className="mt-auto text-left print-no-break pt-4 border-t border-slate-900">
-                                            <div className="w-full h-[1.3cm] min-h-[50px] mb-4 text-white rounded-lg shadow flex items-center px-6 print-header-dark print-h-box bg-[#0f172a]">
-                                                <div className="flex-1 flex gap-8">
-                                                    <div className="flex flex-col"><span className="text-[9px] uppercase opacity-60">Subtotal Neto</span><span className="text-xs font-mono font-black">{formatMoneda(totales.neto)}</span></div>
-                                                    <div className="flex flex-col"><span className="text-[9px] uppercase opacity-60">IVA Incl. (10%)</span><span className="text-xs font-mono font-black">{formatMoneda(totales.iva)}</span></div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="text-[10px] uppercase opacity-85 block">Total General</span>
-                                                    <span className="text-xl font-black font-mono">{formatMoneda(totales.total)}</span>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* SECCIÓN CORREGIDA DE CONDICIONES COMERCIALES */}
-                                            <div className="w-full mb-6">
-                                                <h3 className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1.5"><SafeIcon name="CreditCard" size={10} className="text-indigo-600" /> Condiciones</h3>
-                                                <textarea spellCheck="true" className="w-full min-h-12 p-3 bg-slate-50 border rounded-xl text-[10px] text-slate-600 outline-none print:hidden" value={condiciones} onChange={e => setCondiciones(e.target.value)}/>
-                                                {/* Contenedor fluido exclusivo para que el papel salte de línea de forma automática */}
-                                                <div className="hidden print:block print-text text-[10px] text-slate-800 leading-relaxed w-full max-w-full break-words whitespace-pre-wrap pt-1">
-                                                    {condiciones}
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="table-layout-fixed w-full pt-6 text-center print-signature-row">
-                                                <div className="table-row">
-                                                    <div className="table-cell" style={{ width: '50%', padding: '0 40px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Emisor</p><p className="text-[7px] text-slate-400 font-bold uppercase">{empresa.nombre}</p></div>
-                                                    <div className="table-cell" style={{ width: '50%', padding: '0 40px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Cliente</p><p className="text-[7px] text-slate-400 font-bold uppercase">{cliente.nombre || "Conformidad"}</p></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* PESTAÑA: NOTA DE REMISIÓN COMPACTADA */}
-                            {vistaActiva === 'remisiones' && (
-                                <div className="bg-white shadow-2xl border border-slate-200 print-full flex flex-col min-h-[1050px] rounded-b-3xl overflow-hidden font-black animate-fadeIn">
-                                    <div className="p-6 md:p-8 flex-1 flex flex-col font-black">
-                                        
-                                        {/* ENCABEZADO */}
-                                        <div className="table-layout-fixed w-full border-b-2 border-slate-900 pb-4 mb-6 text-left font-black">
-                                            <div className="table-row">
-                                                <div className="table-cell" style={{ width: '60%' }}>
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl"><SafeIcon name="Truck" size={28}/></div>
-                                                        <div className="space-y-0.5 text-slate-900 font-black">
-                                                            <p className="text-xl uppercase tracking-tight leading-none font-black">{empresa.nombre}</p>
-                                                            <div className="text-slate-500 text-[9px] font-bold uppercase leading-tight">
-                                                                <div>RUC: {empresa.ruc} | {empresa.direccion}</div>
-                                                                <div>Tel: {empresa.telefono}</div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="table-cell text-right" style={{ width: '40%' }}>
-                                                    <div className="flex flex-col items-end">
-                                                        <div className="header-tab bg-amber-600 !py-1 !px-5 text-[10px]">Nota de Remisión</div>
-                                                        <div className="header-box !py-2 !px-4 min-w-[200px] text-right border-amber-600">
-                                                            <label className="text-[8px] text-slate-400 font-black uppercase block tracking-widest mb-0.5">Nro.</label>
-                                                            <input className="text-base font-mono font-black text-right outline-none w-full bg-transparent" value={nroRemision} onChange={e => setNroRemision(e.target.value)}/>
-                                                            <p className="text-[9px] text-slate-800 font-mono text-right mt-0.5">{new Date().toLocaleDateString('es-PY', {day:'numeric', month:'long', year:'numeric'})}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* CLIENTE Y TRASLADO */}
-                                        <div className="mb-6 bg-slate-50 rounded-2xl border border-slate-200 p-5 text-left print-bg-slate font-black print-compact-box">
-                                            <div className="table-layout-fixed w-full">
-                                                <div className="table-row">
-                                                    
-                                                    {/* Destinatario */}
-                                                    <div className="table-cell pr-6" style={{ width: '50%', borderRight: '1px solid #e2e8f0' }}>
-                                                        <h3 className="text-[9px] text-amber-600 uppercase flex items-center gap-2 tracking-[0.15em] mb-3"><SafeIcon name="User" size={10} /> Destinatario</h3>
-                                                        <div className="space-y-2 relative">
-                                                            <div className="flex flex-col">
-                                                                <label className="text-[8px] text-slate-400 uppercase font-black">Cliente</label>
-                                                                <input className="w-full text-xs font-black text-slate-900 bg-white/70 px-2 py-1 rounded-lg border outline-none" value={cliente.nombre} onFocus={() => setShowClientList(true)} onChange={e => { setCliente({...cliente, nombre: e.target.value}); setShowClientList(true); }}/>
-                                                                {showClientList && suggestedClients.length > 0 && (
-                                                                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden no-print">
-                                                                        {suggestedClients.map(c => (
-                                                                            <div key={c.id} onClick={() => { setCliente({ nombre: c.nombre, ruc: c.ruc || "", direccion: c.direccion || "", atencion: c.atencion || "" }); setShowClientList(false); }} className="p-2 hover:bg-amber-50 cursor-pointer border-b last:border-0 text-left"><p className="text-xs font-black uppercase text-slate-900">{c.nombre}</p></div>
-                                                                        ))}
-                                                                    </div>
+                                                                        </td>
+                                                                    </tr>
                                                                 )}
-                                                            </div>
-                                                            <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">RUC</label><input className="w-full text-xs font-black bg-white/50 px-2 py-0.5 rounded border" value={cliente.ruc} onChange={e => setCliente({...cliente, ruc: e.target.value})}/></div>
-                                                            <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Entrega</label><input className="w-full text-xs font-black bg-white/50 px-2 py-0.5 rounded border" value={cliente.direccion} onChange={e => setCliente({...cliente, direccion: e.target.value})}/></div>
-                                                        </div>
+                                                            </React.Fragment>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                                <button onClick={() => setItems([...items, {id: Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0, pesoKg:0, precioKg:0, insumos:0, diasTrabajados:0, costoDia:250000, margenDeseado:30}])} className="mt-4 no-print bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] uppercase shadow flex items-center gap-2"><SafeIcon name="Plus" size={14}/> Agregar Trabajo</button>
+                                            </div>
+
+                                            {/* PIE DE PRESUPUESTO */}
+                                            <div className="mt-auto text-left print-no-break pt-4 border-t border-slate-900">
+                                                <div className="w-full h-[1.3cm] min-h-[50px] mb-4 text-white rounded-lg shadow flex items-center px-6 print-header-dark bg-[#0f172a]">
+                                                    <div className="flex-1 flex gap-8">
+                                                        <div className="flex flex-col"><span className="text-[9px] uppercase opacity-60">Subtotal Neto</span><span className="text-xs font-mono font-black">{formatMoneda(totales.neto)}</span></div>
+                                                        <div className="flex flex-col"><span className="text-[9px] uppercase opacity-60">IVA Incl. (10%)</span><span className="text-xs font-mono font-black">{formatMoneda(totales.iva)}</span></div>
                                                     </div>
-
-                                                    {/* Traslado */}
-                                                    <div className="table-cell pl-6" style={{ width: '50%' }}>
-                                                        <h3 className="text-[9px] text-amber-600 uppercase flex items-center gap-2 tracking-[0.15em] mb-3"><SafeIcon name="MapPin" size={10} /> Traslado</h3>
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Emisión</label><input type="date" className="w-full text-xs font-black bg-white/50 px-2 py-0.5 border rounded" value={remisionDatos.fechaEmision} onChange={e => setRemisionDatos({...remisionDatos, fechaEmision: e.target.value})}/></div>
-                                                            <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Inicio</label><input type="date" className="w-full text-xs font-black bg-white/50 px-2 py-0.5 border rounded" value={remisionDatos.fechaTraslado} onChange={e => setRemisionDatos({...remisionDatos, fechaTraslado: e.target.value})}/></div>
-                                                            <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Motivo</label><input className="w-full text-xs font-black bg-white/50 px-2 py-0.5 border rounded" value={remisionDatos.motivoTraslado} onChange={e => setRemisionDatos({...remisionDatos, motivoTraslado: e.target.value})}/></div>
-                                                            
-                                                            <div className="flex flex-col">
-                                                                <span className="dev-label text-[8px] text-amber-500 font-bold uppercase flex items-center gap-0.5"><SafeIcon name="Zap" size={8} /> Presupuesto (Carga Auto)</span>
-                                                                <span className="clean-print-label hidden">Nro. Presupuesto</span>
-                                                                <input className="w-full text-xs font-black bg-amber-50 border-amber-200 border px-2 py-0.5 rounded" value={remisionDatos.comprobanteVenta} onChange={e => handleComprobanteVentaChange(e.target.value)} placeholder="Ej: PR-2026.0001"/>
-                                                            </div>
-
-                                                            <div className="flex flex-col col-span-2 mt-1">
-                                                                <span className="dev-label text-[8px] text-emerald-600 font-bold uppercase flex items-center gap-0.5"><SafeIcon name="FileText" size={8} /> Factura Manual (Carga Auto)</span>
-                                                                <span className="clean-print-label hidden">Nº Factura Manual</span>
-                                                                <input className="w-full text-xs font-black bg-emerald-50 border-emerald-200 border px-2 py-1 rounded-lg" value={remisionDatos.facturaManual} onChange={e => handleFacturaManualChange(e.target.value)} placeholder="Ej: 001-002-0004321"/>
-                                                            </div>
-                                                        </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[10px] uppercase opacity-85 block">Total General</span>
+                                                        <span className="text-xl font-black font-mono">{formatMoneda(totales.total)}</span>
                                                     </div>
-
+                                                </div>
+                                                
+                                                <div className="w-full mb-6">
+                                                    <h3 className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1.5"><SafeIcon name="CreditCard" size={10} className="text-indigo-600" /> Condiciones</h3>
+                                                    <textarea spellCheck="true" className="w-full min-h-12 p-3 bg-slate-50 border rounded-xl text-[10px] text-slate-600 outline-none print:hidden" value={condiciones} onChange={e => setCondiciones(e.target.value)}/>
+                                                    <div className="hidden print:block print-text text-[10px] text-slate-800 leading-relaxed w-full max-w-full break-words whitespace-pre-wrap pt-1">
+                                                        {condiciones}
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="table-layout-fixed w-full pt-6 text-center print-signature-row">
+                                                    <div className="table-row">
+                                                        <div className="table-cell" style={{ width: '50%', padding: '0 40px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Emisor</p><p className="text-[7px] text-slate-400 font-bold uppercase">{empresa.nombre}</p></div>
+                                                        <div className="table-cell" style={{ width: '50%', padding: '0 40px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Cliente</p><p className="text-[7px] text-slate-400 font-bold uppercase">{cliente.nombre || "Conformidad"}</p></div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* CONDUCTOR Y VEHÍCULO */}
-                                        <div className="mb-6 bg-slate-50 rounded-2xl border border-slate-200 p-5 text-left print-bg-slate font-black print-compact-box">
-                                            <h3 className="text-[9px] text-amber-600 uppercase flex items-center gap-2 tracking-[0.15em] mb-3"><SafeIcon name="Truck" size={10} /> Transporte y Conductor</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                                <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Conductor</label><input className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={remisionDatos.conductorNombre} onChange={e => setRemisionDatos({...remisionDatos, conductorNombre: e.target.value})}/></div>
-                                                <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Documento</label><input className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={remisionDatos.conductorRuc} onChange={e => setRemisionDatos({...remisionDatos, conductorRuc: e.target.value})}/></div>
-                                                <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Chapa</label><input className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={remisionDatos.vehiculoChapa} onChange={e => setRemisionDatos({...remisionDatos, vehiculoChapa: e.target.value})}/></div>
-                                                <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Modelo</label><input className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={remisionDatos.marcaVehiculo} onChange={e => setRemisionDatos({...remisionDatos, marcaVehiculo: e.target.value})}/></div>
-                                            </div>
-                                        </div>
-
-                                        {/* TABLA DE ELEMENTOS A REMITIR */}
-                                        <div className="mb-6 flex-1">
-                                            <table className="w-full border-collapse">
-                                                <thead>
-                                                    <tr className="border-b border-slate-900 text-slate-900 uppercase text-[9px] tracking-widest">
-                                                        <th className="py-2 w-8 text-center">#</th>
-                                                        <th className="py-2 pl-2 text-left" style={{ width: '60%' }}>Bienes a Remitir</th>
-                                                        <th className="py-2 w-20 text-center">Cant.</th>
-                                                        <th className="py-2 w-24 text-center">Unidad</th>
-                                                        <th className="py-2 w-28 text-right pr-2">Peso (KG)</th>
-                                                        <th className="py-2 w-8 no-print"></th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100 text-[11px]">
-                                                    {remisionItems.map((item, idx) => (
-                                                        <tr key={item.id} className="align-top print-no-break print-compact-py">
-                                                            <td className="py-2 text-[10px] text-slate-400 font-mono text-center pt-3">{idx + 1}</td>
-                                                            <td className="py-2 pl-2 pr-4 pt-2">
-                                                                <AutoResizeTextarea isTitle={true} placeholder="Estructura..." value={item.descripcion} className="flex-1 font-black text-slate-900 text-[11px] uppercase tracking-tight" onChange={e => actualizarRemisionItem(item.id, 'descripcion', e.target.value)}/>
-                                                            </td>
-                                                            <td className="py-2 pt-3 text-center px-1">
-                                                                <input type="number" className="w-full text-center outline-none bg-transparent font-mono" value={item.cantidad} onChange={e => actualizarRemisionItem(item.id, 'cantidad', parseFloat(e.target.value) || 0)}/>
-                                                            </td>
-                                                            <td className="py-2 pt-3 text-center px-1">
-                                                                <input className="w-full text-center outline-none bg-transparent uppercase" value={item.indigoMedida} onChange={e => actualizarRemisionItem(item.id, 'indigoMedida', e.target.value)}/>
-                                                            </td>
-                                                            <td className="py-2 pt-3 pr-2 text-right font-mono">
-                                                                <input type="number" className="w-full text-right outline-none bg-transparent font-mono" value={item.pesoTotalKg} onChange={e => actualizarRemisionItem(item.id, 'pesoTotalKg', parseFloat(e.target.value) || 0)}/>
-                                                            </td>
-                                                            <td className="py-2 text-center no-print pt-3">
-                                                                <button onClick={() => setRemisionItems(remisionItems.filter(it => it.id !== item.id))} className="text-slate-200 hover:text-rose-500"><SafeIcon name="Trash2" size={14}/></button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                            <button onClick={() => setRemisionItems([...remisionItems, {id: Date.now(), descripcion:"", cantidad:1, indigoMedida:"UNIDAD", pesoTotalKg:0}])} className="mt-4 no-print bg-amber-600 text-white px-4 py-2 rounded-xl text-[9px] uppercase shadow flex items-center gap-2"><SafeIcon name="Plus" size={14}/> Agregar Ítem</button>
-                                        </div>
-
-                                        {/* PIE DE FIRMAS */}
-                                        <div className="mt-auto text-left print-no-break pt-4 border-t border-slate-900">
-                                            <div className="table-layout-fixed w-full pt-10 text-center print-signature-row">
-                                                <div className="table-row">
-                                                    <div className="table-cell" style={{ width: '33%', padding: '0 15px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Emisor</p><p className="text-[7px] text-slate-400 font-bold uppercase">Despacho</p></div>
-                                                    <div className="table-cell" style={{ width: '33%', padding: '0 15px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Transportista</p><p className="text-[7px] text-slate-400 font-bold uppercase">Conductor</p></div>
-                                                    <div className="table-cell" style={{ width: '33%', padding: '0 15px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Receptor</p><p className="text-[7px] text-slate-400 font-bold uppercase">Conformidad Obra</p></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                        </main>
+                                {/* PESTAÑA: NOTA DE REMISIÓN */}
+                                {vistaActiva === 'remisiones' && (
+                                    <div className="bg-white shadow-2xl border border-slate-200 print-full flex flex-col min-h-[1050px] rounded-3xl overflow-hidden font-black animate-fadeIn">
+                                        <div className="p-6 md:p-8 flex-1 flex flex-col font-black">
+                                            {/* ENCABEZADO */}
+                                            <div className="table-layout-fixed w-full border-b-2 border-slate-900 pb-4 mb-6 text-left font-black">
+                                                <div className="table-row">
+                                                    <div className="table-cell" style={{ width: '60%' }}>
+                                                        <div className="flex items-start gap-4">
+                                                            {empresa.logoUrl ? (
+                                                                <img src={empresa.logoUrl} className="w-14 h-14 object-contain rounded-xl" alt="Logo"/>
+                                                            ) : (
+                                                                <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl"><SafeIcon name="Truck" size={28}/></div>
+                                                            )}
+                                                            <div className="space-y-0.5 text-slate-900 font-black">
+                                                                <p className="text-xl uppercase tracking-tight leading-none font-black">{empresa.nombre}</p>
+                                                                <div className="text-slate-500 text-[9px] font-bold uppercase leading-tight">
+                                                                    <div>RUC: {empresa.ruc} | {empresa.direccion}</div>
+                                                                    <div>Tel: {empresa.telefono} | {empresa.email}</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="table-cell text-right" style={{ width: '40%' }}>
+                                                        <div className="flex flex-col items-end">
+                                                            <div className="header-tab bg-amber-600 !py-1 !px-5 text-[10px]">Nota de Remisión</div>
+                                                            <div className="header-box !py-2 !px-4 min-w-[200px] text-right border-amber-600">
+                                                                <label className="text-[8px] text-slate-400 font-black uppercase block tracking-widest mb-0.5">Nro.</label>
+                                                                <input className="text-base font-mono font-black text-right outline-none w-full bg-transparent" value={nroRemision} onChange={e => setNroRemision(e.target.value)}/>
+                                                                <p className="text-[9px] text-slate-800 font-mono text-right mt-0.5">{new Date().toLocaleDateString('es-PY', {day:'numeric', month:'long', year:'numeric'})}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* CLIENTE Y TRASLADO */}
+                                            <div className="mb-6 bg-slate-50 rounded-2xl border border-slate-200 p-5 text-left print-bg-slate font-black print-compact-box">
+                                                <div className="table-layout-fixed w-full">
+                                                    <div className="table-row">
+                                                        <div className="table-cell pr-6" style={{ width: '50%', borderRight: '1px solid #e2e8f0' }}>
+                                                            <h3 className="text-[9px] text-amber-600 uppercase flex items-center gap-2 tracking-[0.15em] mb-3"><SafeIcon name="User" size={10} /> Destinatario</h3>
+                                                            <div className="space-y-2 relative">
+                                                                <div className="flex flex-col">
+                                                                    <label className="text-[8px] text-slate-400 uppercase font-black">Cliente</label>
+                                                                    <input className="w-full text-xs font-black text-slate-900 bg-white/70 px-2 py-1 rounded-lg border outline-none" value={cliente.nombre} onFocus={() => setShowClientList(true)} onChange={e => { setCliente({...cliente, nombre: e.target.value}); setShowClientList(true); }}/>
+                                                                    {showClientList && suggestedClients.length > 0 && (
+                                                                        <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden no-print">
+                                                                            {suggestedClients.map(c => (
+                                                                                <div key={c.id} onClick={() => { setCliente({ nombre: c.nombre, ruc: c.ruc || "", direccion: c.direccion || "", atencion: c.atencion || "", vendedor: c.vendedor || "", telefono: c.telefono || "", email: c.email || "" }); setShowClientList(false); }} className="p-2 hover:bg-amber-50 cursor-pointer border-b last:border-0 text-left"><p className="text-xs font-black uppercase text-slate-900">{c.nombre}</p></div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">RUC</label><input className="w-full text-xs font-black bg-white/50 px-2 py-0.5 rounded border" value={cliente.ruc} onChange={e => setCliente({...cliente, ruc: e.target.value})}/></div>
+                                                                <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Entrega</label><input className="w-full text-xs font-black bg-white/50 px-2 py-0.5 rounded border" value={cliente.direccion} onChange={e => setCliente({...cliente, direccion: e.target.value})}/></div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="table-cell pl-6" style={{ width: '50%' }}>
+                                                            <h3 className="text-[9px] text-amber-600 uppercase flex items-center gap-2 tracking-[0.15em] mb-3"><SafeIcon name="MapPin" size={10} /> Traslado</h3>
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Emisión</label><input type="date" className="w-full text-xs font-black bg-white/50 px-2 py-0.5 border rounded" value={remisionDatos.fechaEmision} onChange={e => setRemisionDatos({...remisionDatos, fechaEmision: e.target.value})}/></div>
+                                                                <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Inicio</label><input type="date" className="w-full text-xs font-black bg-white/50 px-2 py-0.5 border rounded" value={remisionDatos.fechaTraslado} onChange={e => setRemisionDatos({...remisionDatos, fechaTraslado: e.target.value})}/></div>
+                                                                <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Motivo</label><input className="w-full text-xs font-black bg-white/50 px-2 py-0.5 border rounded" value={remisionDatos.motivoTraslado} onChange={e => setRemisionDatos({...remisionDatos, motivoTraslado: e.target.value})}/></div>
+                                                                
+                                                                <div className="flex flex-col">
+                                                                    <span className="dev-label text-[8px] text-amber-500 font-bold uppercase flex items-center gap-0.5"><SafeIcon name="Zap" size={8} /> Presupuesto</span>
+                                                                    <span className="clean-print-label hidden">Nro. Presupuesto</span>
+                                                                    <input className="w-full text-xs font-black bg-amber-50 border-amber-200 border px-2 py-0.5 rounded" value={remisionDatos.comprobanteVenta} onChange={e => handleComprobanteVentaChange(e.target.value)} placeholder="Ej: PR-2026.0001"/>
+                                                                </div>
+
+                                                                <div className="flex flex-col col-span-2 mt-1">
+                                                                    <span className="dev-label text-[8px] text-emerald-600 font-bold uppercase flex items-center gap-0.5"><SafeIcon name="FileText" size={8} /> Factura Manual</span>
+                                                                    <span className="clean-print-label hidden">Nº Factura Manual</span>
+                                                                    <input className="w-full text-xs font-black bg-emerald-50 border-emerald-200 border px-2 py-1 rounded-lg" value={remisionDatos.facturaManual} onChange={e => handleFacturaManualChange(e.target.value)} placeholder="Ej: 001-002-0004321"/>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* TRANSPORTISTA */}
+                                            <div className="mb-6 bg-slate-50 rounded-2xl border border-slate-200 p-5 text-left print-bg-slate font-black print-compact-box">
+                                                <h3 className="text-[9px] text-amber-600 uppercase flex items-center gap-2 tracking-[0.15em] mb-3"><SafeIcon name="Truck" size={10} /> Transporte y Conductor</h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                                    <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Conductor</label><input className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={remisionDatos.conductorNombre} onChange={e => setRemisionDatos({...remisionDatos, conductorNombre: e.target.value})}/></div>
+                                                    <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Documento</label><input className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={remisionDatos.conductorRuc} onChange={e => setRemisionDatos({...remisionDatos, conductorRuc: e.target.value})}/></div>
+                                                    <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Chapa</label><input className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={remisionDatos.vehiculoChapa} onChange={e => setRemisionDatos({...remisionDatos, vehiculoChapa: e.target.value})}/></div>
+                                                    <div className="flex flex-col"><label className="text-[8px] text-slate-400 uppercase font-black">Modelo</label><input className="w-full text-xs font-black bg-white/70 px-2 py-1 rounded-lg border" value={remisionDatos.marcaVehiculo} onChange={e => setRemisionDatos({...remisionDatos, marcaVehiculo: e.target.value})}/></div>
+                                                </div>
+                                            </div>
+
+                                            {/* TABLA REMISIÓN */}
+                                            <div className="mb-6 flex-1">
+                                                <table className="w-full border-collapse font-black">
+                                                    <thead>
+                                                        <tr className="border-b border-slate-900 text-slate-900 uppercase text-[9px] tracking-widest">
+                                                            <th className="py-2 w-8 text-center">#</th>
+                                                            <th className="py-2 pl-2 text-left" style={{ width: '60%' }}>Bienes a Remitir</th>
+                                                            <th className="py-2 w-20 text-center">Cant.</th>
+                                                            <th className="py-2 w-24 text-center">Unidad</th>
+                                                            <th className="py-2 w-28 text-right pr-2">Peso (KG)</th>
+                                                            <th className="py-2 w-8 no-print"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100 text-[11px]">
+                                                        {remisionItems.map((item, idx) => (
+                                                            <tr key={item.id} className="align-top print-no-break print-compact-py">
+                                                                <td className="py-2 text-[10px] text-slate-400 font-mono text-center pt-3">{idx + 1}</td>
+                                                                <td className="py-2 pl-2 pr-4 pt-2">
+                                                                    <AutoResizeTextarea isTitle={true} placeholder="Estructura..." value={item.descripcion} className="flex-1 font-black text-slate-900 text-[11px] uppercase tracking-tight" onChange={e => actualizarRemisionItem(item.id, 'descripcion', e.target.value)}/>
+                                                                </td>
+                                                                <td className="py-2 pt-3 text-center px-1">
+                                                                    <input type="number" className="w-full text-center outline-none bg-transparent font-mono" value={item.cantidad} onChange={e => actualizarRemisionItem(item.id, 'cantidad', parseFloat(e.target.value) || 0)}/>
+                                                                </td>
+                                                                <td className="py-2 pt-3 text-center px-1">
+                                                                    <input className="w-full text-center outline-none bg-transparent uppercase" value={item.indigoMedida} onChange={e => actualizarRemisionItem(item.id, 'indigoMedida', e.target.value)}/>
+                                                                </td>
+                                                                <td className="py-2 pt-3 pr-2 text-right font-mono">
+                                                                    <input type="number" className="w-full text-right outline-none bg-transparent font-mono" value={item.pesoTotalKg} onChange={e => actualizarRemisionItem(item.id, 'pesoTotalKg', parseFloat(e.target.value) || 0)}/>
+                                                                </td>
+                                                                <td className="py-2 text-center no-print pt-3">
+                                                                    <button onClick={() => setRemisionItems(remisionItems.filter(it => it.id !== item.id))} className="text-slate-200 hover:text-rose-500"><SafeIcon name="Trash2" size={14}/></button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                                <button onClick={() => setRemisionItems([...remisionItems, {id: Date.now(), descripcion:"", cantidad:1, indigoMedida:"UNIDAD", pesoTotalKg:0}])} className="mt-4 no-print bg-amber-600 text-white px-4 py-2 rounded-xl text-[9px] uppercase shadow flex items-center gap-2"><SafeIcon name="Plus" size={14}/> Agregar Ítem</button>
+                                            </div>
+
+                                            {/* SIGNATURES */}
+                                            <div className="mt-auto text-left print-no-break pt-4 border-t border-slate-900">
+                                                <div className="table-layout-fixed w-full pt-10 text-center print-signature-row">
+                                                    <div className="table-row">
+                                                        <div className="table-cell" style={{ width: '33%', padding: '0 15px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Emisor</p><p className="text-[7px] text-slate-400 font-bold uppercase">Despacho</p></div>
+                                                        <div className="table-cell" style={{ width: '33%', padding: '0 15px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Transportista</p><p className="text-[7px] text-slate-400 font-bold uppercase">Conductor</p></div>
+                                                        <div className="table-cell" style={{ width: '33%', padding: '0 15px' }}><div className="border-t border-slate-300 w-full mb-1"></div><p className="text-[9px] uppercase font-black">Receptor</p><p className="text-[7px] text-slate-400 font-bold uppercase">Conformidad Obra</p></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </main>
+                        ) : (
+                            /* PANEL DE CONFIGURACIÓN SEGURO */
+                            <main className="flex-1 bg-white rounded-3xl border border-slate-200 p-8 text-left shadow-sm animate-fadeIn">
+                                <div className="border-b border-slate-200 pb-4 mb-6">
+                                    <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight flex items-center gap-2"><SafeIcon name="Sliders" size={18} className="text-indigo-600"/> Cabecera Global del Sistema</h2>
+                                    <p className="text-[10px] text-slate-400 uppercase font-bold mt-1">Configura las cabeceras e información de la empresa sin tocar código.</p>
+                                </div>
+                                <form onSubmit={guardandoConfigEmpresa} className="space-y-5 max-w-2xl font-black">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="flex flex-col"><label className="text-[9px] text-slate-400 uppercase font-bold mb-1">Nombre Comercial de Empresa</label><input type="text" className="bg-slate-50 border p-2.5 rounded-xl text-xs outline-none focus:border-indigo-500 font-black text-slate-800" value={empresa.nombre} onChange={e => setEmpresa({...empresa, nombre: e.target.value.toUpperCase()})}/></div>
+                                        <div className="flex flex-col"><label className="text-[9px] text-slate-400 uppercase font-bold mb-1">RUC de la Empresa</label><input type="text" className="bg-slate-50 border p-2.5 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono text-slate-700" value={empresa.ruc} onChange={e => setEmpresa({...empresa, ruc: e.target.value})}/></div>
+                                    </div>
+                                    <div className="flex flex-col"><label className="text-[9px] text-slate-400 uppercase font-bold mb-1">Dirección de la Planta / Taller</label><input type="text" className="bg-slate-50 border p-2.5 rounded-xl text-xs outline-none focus:border-indigo-500 font-black text-slate-800" value={empresa.direccion} onChange={e => setEmpresa({...empresa, direccion: e.target.value.toUpperCase()})}/></div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="flex flex-col"><label className="text-[9px] text-slate-400 uppercase font-bold mb-1">Teléfono de Contacto</label><input type="text" className="bg-slate-50 border p-2.5 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono text-slate-700" value={empresa.telefono} onChange={e => setEmpresa({...empresa, telefono: e.target.value})}/></div>
+                                        <div className="flex flex-col"><label className="text-[9px] text-slate-400 uppercase font-bold mb-1">Correo Corporativo</label><input type="text" className="bg-slate-50 border p-2.5 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono text-slate-700" value={empresa.email} onChange={e => setEmpresa({...empresa, email: e.target.value.toUpperCase()})}/></div>
+                                    </div>
+                                    <div className="flex flex-col border-t border-slate-200 pt-4">
+                                        <label className="text-[9px] text-slate-400 uppercase font-bold mb-1 flex items-center gap-1"><SafeIcon name="Image" size={10}/> URL del Logo Corporativo</label>
+                                        <input type="text" className="bg-slate-50 border p-2.5 rounded-xl text-xs outline-none focus:border-indigo-500 text-slate-600 font-mono" value={empresa.logoUrl || ""} onChange={e => setEmpresa({...empresa, logoUrl: e.target.value})} placeholder="https://ejemplo.com/logo.png"/>
+                                        <p className="text-[8px] text-slate-400 uppercase font-bold mt-1.5">Pega un enlace directo de internet (enlace de imagen PNG o JPG) para desplegar tu marca en todos los comprobantes impresos.</p>
+                                    </div>
+                                    <button type="submit" className="bg-indigo-600 text-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider shadow hover:bg-indigo-700 transition-all">Guardar Configuración en Servidor</button>
+                                </form>
+                            </main>
+                        )}
                     </div>
 
-                    {/* MODAL DE ADVERTENCIA */}
+                    {/* MODAL ADVERTENCIA */}
                     {showSaveConfirmModal && (
                         <div className="fixed inset-0 z-[110] bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-6 no-print font-black">
                             <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-md w-full text-center space-y-6">
                                 <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto"><SafeIcon name="AlertCircle" size={32}/></div>
-                                <div><h3 className="font-black uppercase text-sm tracking-widest text-slate-800">Documento ya existe</h3><p className="text-[10px] text-slate-500 font-bold mt-2 uppercase font-black font-black font-black">¿Deseas actualizar el presupuesto {nroPresupuesto} o guardar una copia nueva?</p></div>
+                                <div><h3 className="font-black uppercase text-sm tracking-widest text-slate-800">Documento ya existe</h3><p className="text-[10px] text-slate-500 font-bold mt-2 uppercase font-black">¿Deseas actualizar el presupuesto {nroPresupuesto} o guardar una copia nueva?</p></div>
                                 <div className="grid grid-cols-1 gap-3 font-black">
                                     <button onClick={() => executeSave(nroPresupuesto)} className="py-4 bg-indigo-600 text-white rounded-xl text-[10px] font-black">Actualizar Existente</button>
                                     <button onClick={() => executeSave(generarNro(savedBudgets))} className="py-4 bg-slate-800 text-white rounded-xl text-[10px] font-black">Guardar como Nuevo</button>

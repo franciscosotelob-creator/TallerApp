@@ -1,6 +1,6 @@
 {
   "name": "gestion-taller-maestranza",
-  "version": "1.0.4",
+  "version": "1.0.3",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
