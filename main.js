@@ -6,9 +6,10 @@ const log = require('electron-log');
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 
+// URL CORREGIDA APUNTANDO A TU GITHUB REAL
 autoUpdater.setFeedURL({
   provider: 'github',
-  owner: 'franciscosotelob-creator',
+  owner: 'franciscosotelob-creador',
   repo: 'sistema-de-presupuestos'
 });
 
@@ -64,6 +65,10 @@ autoUpdater.on('update-downloaded', () => {
   }).then(() => {
     autoUpdater.quitAndInstall();
   });
+});
+
+autoUpdater.on('error', (err) => {
+  log.error('Error en la actualización automática: ' + err);
 });
 
 app.whenReady().then(createWindow);
