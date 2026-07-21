@@ -25,14 +25,10 @@
         if (window.nodeModule) module = window.nodeModule;
     </script>
 
-   <style>
+    <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
         
         @media screen {
-            html, body {
-                overflow-x: hidden; /* Evita que la pantalla se desplace a los lados */
-                width: 100%;
-            }
             body {
                 background-color: #131926;
                 color: #f1f5f9;
@@ -88,50 +84,34 @@
             }
         }
 
-        /* 🖨️ BLINDAJE Y AJUSTE PERFECTO A4 */
+        /* 🖨️ NUEVO BLINDAJE DE IMPRESIÓN A4 BLANCO */
         @media print {
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            html, body, #root { 
-                background-color: white !important; 
-                color: black !important; 
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                overflow: visible !important;
-            }
+            html, body, #root { background-color: white !important; color: black !important; }
             
-            /* Destruir fondos oscuros */
+            /* Destruir fondos oscuros en la impresión */
             .bg-\[\#131926\], .bg-\[\#1e293b\], .bg-\[\#111827\], .bg-slate-800, .bg-slate-900, .bg-slate-950 { 
                 background-color: white !important; 
             }
             
-            /* Textos en negro puro */
+            /* Forzar todos los textos a negro */
             .text-white, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500 { 
                 color: black !important; 
             }
             
+            /* Suavizar bordes oscuros */
             .border-slate-700, .border-slate-600, .border-slate-800 {
                 border-color: #cbd5e1 !important;
             }
 
-            @page { size: A4 portrait; margin: 10mm; }
+            @page { size: A4; margin: 8mm; }
             .no-print { display: none !important; }
-            
-            /* Ajuste fluido a 100% de la hoja A4 sin desbordar a la derecha */
-            .print-full { 
-                width: 100% !important; 
-                max-width: 100% !important; 
-                margin: 0 auto !important; 
-                border: none !important; 
-                box-shadow: none !important; 
-                background: white !important; 
-                padding: 0 !important; 
-            }
+            .print-full { width: 194mm !important; margin: 0 auto !important; border: none !important; box-shadow: none !important; background: white !important; padding: 0 !important; }
             
             .print-text { display: block !important; white-space: pre-wrap !important; word-wrap: break-word !important; word-break: break-word !important; overflow-wrap: break-word !important; max-width: 100% !important; font-size: 9pt !important; color: black !important; text-align: left !important; width: 100% !important; }
             textarea { display: none !important; }
             
-            .table-layout-fixed { display: table !important; width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+            .table-layout-fixed { display: table !important; width: 100% !important; table-layout: auto !important; border-collapse: collapse !important; }
             .table-row { display: table-row !important; }
             .table-cell { display: table-cell !important; vertical-align: top !important; word-wrap: break-word !important; overflow-wrap: break-word !important; white-space: normal !important; color: black !important; }
             
@@ -196,7 +176,7 @@
             );
         };
 
-        const AutoResizeTextarea = ({ value, onChange, onFocus, onBlur, placeholder, className, isTitle = false }) => {
+        const AutoResizeTextarea = ({ value, onChange, placeholder, className, isTitle = false }) => {
             const areaRef = useRef(null);
             
             const handleChange = (e) => {
@@ -223,8 +203,6 @@
                         ref={areaRef} 
                         value={value || ""} 
                         onChange={handleChange} 
-                        onFocus={onFocus}
-                        onBlur={onBlur}
                         placeholder={placeholder}
                         spellCheck="true"
                         className={`${className} w-full block bg-transparent outline-none overflow-hidden print:hidden text-left`} 
@@ -296,15 +274,6 @@
             }]);
 
             const [condiciones, setCondiciones] = useState("Plazo de entrega: A convenir.\nForma de pago: 60% entrega inicial y saldo contra entrega.");
-
-            const [serviciosPredeterminados, setServiciosPredeterminados] = useState([
-                "SERVICIO DE CORTE Y DOBLADO DE CHAPAS",
-                "FABRICACIÓN DE ESTRUCTURA METÁLICA",
-                "MONTAJE EN CAMPO Y INSTALACIÓN",
-                "CONSULTA Y TRATAMIENTO PROFESIONAL",
-                "MANTENIMIENTO Y SERVICIO TÉCNICO"
-            ]);
-            const [showServiceList, setShowServiceList] = useState({});
 
             const [nroRemision, setNroRemision] = useState("");
             const [remisionDatos, setRemisionDatos] = useState({
@@ -471,14 +440,11 @@
                 return savedEmpresas.filter(e => e.nombre?.toLowerCase().includes(empresa.nombre.toLowerCase()));
             }, [empresa.nombre, savedEmpresas]);
 
-            /* 📁 ESTRUCTURA MULTIEMPRESA: AGRUPACIÓN JERÁRQUICA (EMPRESA > CLIENTE) */
-            const groupedBudgetsByEmpresa = useMemo(() => {
+            const groupedBudgets = useMemo(() => {
                 return savedBudgets.reduce((acc, b) => {
-                    const empNombre = b.empresa?.nombre || "EMPRESA SIN ESPECIFICAR";
-                    const clientNombre = b.cliente?.nombre || "CLIENTE SIN NOMBRE";
-                    if (!acc[empNombre]) acc[empNombre] = {};
-                    if (!acc[empNombre][clientNombre]) acc[empNombre][clientNombre] = [];
-                    acc[empNombre][clientNombre].push(b);
+                    const folder = b.cliente?.nombre || "Sin Nombre";
+                    if (!acc[folder]) acc[folder] = [];
+                    acc[folder].push(b);
                     return acc;
                 }, {});
             }, [savedBudgets]);
@@ -661,54 +627,51 @@
             return (
                 <div className="min-h-screen pb-10 bg-[#131926] text-slate-200 flex flex-col items-center">
                     
-                    {/* MENÚ SUPERIOR INDUSTRIAL REORGANIZADO Y RESPONSIVO */}
-                    <nav className="w-full sticky top-0 z-50 bg-[#1e293b] border-b border-slate-700 px-4 py-2 no-print flex flex-col lg:flex-row items-center justify-between gap-2 shadow-[0_4px_20px_rgba(0,0,0,0.15)] font-black">
-                        <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start">
+                    {/* MENÚ SUPERIOR INDUSTRIAL CYBERPUNK */}
+                    <nav className="w-full sticky top-0 z-50 bg-[#1e293b] border-b border-slate-700 px-6 py-2.5 no-print flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.15)] font-black">
+                        <div className="flex items-center gap-6">
                             <div className="text-left">
-                                <h1 className="text-xs font-black text-white uppercase tracking-tight flex items-center gap-2">CONTROL DE GESTIÓN <span className="text-[9px] text-cyan-400 font-mono bg-cyan-500/10 px-1 py-0.5 rounded border border-cyan-500/20">v2.0</span></h1>
-                                <div className="flex items-center gap-1 mt-0.5 uppercase text-[7px] text-cyan-400 font-mono font-bold">
+                                <h1 className="text-sm font-black text-white uppercase tracking-tight flex items-center gap-2">CONTROL DE GESTIÓN <span className="text-[10px] text-cyan-400 font-mono bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">v2.0</span></h1>
+                                <div className="flex items-center gap-1.5 mt-0.5 uppercase text-[8px] text-cyan-400 font-mono font-bold">
                                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#06b6d4] animate-pulse"></div>
-                                    RED OPERATIVA
+                                    RED OPERATIVA ({user?.email || "CONECTANDO..."})
                                 </div>
                             </div>
-                            
-                            {/* PESTAÑAS DE NAVEGACIÓN COMPACTAS */}
-                            <div className="flex gap-1 border-l border-slate-700 pl-3 flex-wrap">
-                                <button onClick={() => setVistaActiva('dashboard')} className={`text-[11px] font-black px-2.5 py-1 rounded-lg uppercase flex items-center gap-1 transition-all ${vistaActiva === 'dashboard' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'}`}><SafeIcon name="LayoutDashboard" size={12} /> Panel</button>
-                                <button onClick={() => setVistaActiva('presupuestos')} className={`text-[11px] font-black px-2.5 py-1 rounded-lg uppercase flex items-center gap-1 transition-all ${vistaActiva === 'presupuestos' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'}`}><SafeIcon name="FileText" size={12} /> Presupuesto</button>
-                                <button onClick={() => setVistaActiva('remisiones')} className={`text-[11px] font-black px-2.5 py-1 rounded-lg uppercase flex items-center gap-1 transition-all ${vistaActiva === 'remisiones' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'}`}><SafeIcon name="Truck" size={12} /> Remisiones</button>
-                                <button onClick={() => setVistaActiva('almacen')} className={`text-[11px] font-black px-2.5 py-1 rounded-lg uppercase flex items-center gap-1 transition-all ${vistaActiva === 'almacen' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'}`}><SafeIcon name="Package" size={12} /> Almacén</button>
-                                <button onClick={() => setVistaActiva('obras')} className={`text-[11px] font-black px-2.5 py-1 rounded-lg uppercase flex items-center gap-1 transition-all ${vistaActiva === 'obras' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'}`}><SafeIcon name="HardHat" size={12} /> Obras</button>
-                                <button onClick={() => setVistaActiva('historial')} className={`text-[11px] font-black px-2.5 py-1 rounded-lg uppercase flex items-center gap-1 transition-all ${vistaActiva === 'historial' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'}`}><SafeIcon name="Archive" size={12} /> Historial</button>
-                                <button onClick={() => setVistaActiva('configuracion')} className={`text-[11px] font-black px-2.5 py-1 rounded-lg uppercase flex items-center gap-1 transition-all ${vistaActiva === 'configuracion' ? 'bg-cyan-600 text-white shadow' : 'text-slate-300 hover:bg-slate-800'}`}><SafeIcon name="Sliders" size={12} /> Config</button>
+                            <div className="flex gap-1 border-l border-slate-700 pl-4">
+                                <button onClick={() => setVistaActiva('dashboard')} className={`text-xs font-black px-4 py-1.5 rounded-xl uppercase flex items-center gap-2 transition-all ${vistaActiva === 'dashboard' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_4px_12px_rgba(6,182,212,0.2)]' : 'text-slate-300 hover:bg-slate-800 hover:text-cyan-400'}`}><SafeIcon name="LayoutDashboard" size={14} /> Panel</button>
+                                <button onClick={() => setVistaActiva('presupuestos')} className={`text-xs font-black px-4 py-1.5 rounded-xl uppercase flex items-center gap-2 transition-all ${vistaActiva === 'presupuestos' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_4px_12px_rgba(6,182,212,0.2)]' : 'text-slate-300 hover:bg-slate-800 hover:text-cyan-400'}`}><SafeIcon name="FileText" size={14} /> Presupuestador</button>
+                                <button onClick={() => setVistaActiva('remisiones')} className={`text-xs font-black px-4 py-1.5 rounded-xl uppercase flex items-center gap-2 transition-all ${vistaActiva === 'remisiones' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_4px_12px_rgba(6,182,212,0.2)]' : 'text-slate-300 hover:bg-slate-800 hover:text-cyan-400'}`}><SafeIcon name="Truck" size={14} /> Remisiones</button>
+                                <button onClick={() => setVistaActiva('historial')} className={`text-xs font-black px-4 py-1.5 rounded-xl uppercase flex items-center gap-2 transition-all ${vistaActiva === 'historial' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_4px_12px_rgba(6,182,212,0.2)]' : 'text-slate-300 hover:bg-slate-800 hover:text-cyan-400'}`}><SafeIcon name="Archive" size={14} /> Historial / Carpetas</button>
+                                <button onClick={() => setVistaActiva('configuracion')} className={`text-xs font-black px-4 py-1.5 rounded-xl uppercase flex items-center gap-2 transition-all ${vistaActiva === 'configuracion' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_4px_12px_rgba(6,182,212,0.2)]' : 'text-slate-300 hover:bg-slate-800 hover:text-cyan-400'}`}><SafeIcon name="Sliders" size={14} /> Configuración</button>
                             </div>
                         </div>
-
-                        {/* BOTONES DE ACCIÓN SIEMPRE VISIBLES A LA DERECHA */}
-                        <div className="flex items-center gap-2 w-full lg:w-auto justify-end border-t lg:border-t-0 border-slate-700 pt-1 lg:pt-0">
+                        <div className="flex items-center gap-4">
                             {vistaActiva === 'presupuestos' && (
                                 <>
-                                    <button onClick={() => { setCliente({nombre:"", ruc:"", direccion:"", atencion:"", vendedor:"", telefono:"", email:""}); setNroPresupuesto(generarNro(savedBudgets)); setItems([{id:Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0, pesoKg:0, precioKg:0, insumos:0, diasTrabajados:0, costoDia:250000, margenDeseado:30}]); }} className="text-[10px] font-black text-slate-300 hover:text-cyan-400 flex items-center gap-1 uppercase transition-all font-mono px-2 py-1 bg-slate-800 rounded-lg border border-slate-700"><SafeIcon name="FilePlus" size={12} /> NUEVA_HOJA</button>
-                                    
-                                    <div className="flex bg-[#111827] border border-slate-700 rounded-lg p-0.5 font-mono">
+                                    <button onClick={() => { setCliente({nombre:"", ruc:"", direccion:"", atencion:"", vendedor:"", telefono:"", email:""}); setNroPresupuesto(generarNro(savedBudgets)); setItems([{id:Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0, pesoKg:0, precioKg:0, insumos:0, diasTrabajados:0, costoDia:250000, margenDeseado:30}]); }} className="text-xs font-black text-slate-300 hover:text-cyan-400 flex items-center gap-1.5 uppercase transition-all font-mono"><SafeIcon name="FilePlus" size={14} /> NUEVA_HOJA</button>
+                                    <div className="hidden xl:flex bg-[#111827] border border-slate-700 text-slate-300 px-4 py-1.5 rounded-xl items-center gap-6 shadow-inner font-mono">
+                                        <div className="flex flex-col"><span className="text-[7px] text-slate-500 uppercase">COSTO REAL</span><span className="text-[10px] text-slate-400">{formatMoneda(totales.costoTotal)}</span></div>
+                                        <div className="flex flex-col"><span className="text-[7px] text-slate-500 uppercase">UTILIDAD</span><span className={`text-[10px] ${totales.margenActual > 30 ? 'text-emerald-400' : 'text-amber-400'}`}>{formatMoneda(totales.total - totales.costoTotal)}</span></div>
+                                        <div className="flex flex-col text-right"><span className="text-[7px] text-slate-500 uppercase">MARGEN</span><span className="text-[10px] text-cyan-400">{totales.margenActual.toFixed(1)}%</span></div>
+                                    </div>
+                                    <div className="flex bg-[#111827] border border-slate-700 rounded-xl p-1 font-mono">
                                         {['pendiente', 'aprobado', 'rechazado'].map(e => (
-                                            <button key={e} onClick={() => setEstado(e)} className={`px-2 py-0.5 text-[9px] font-black rounded uppercase transition-all ${estado === e ? 'bg-cyan-600 text-white' : 'text-slate-500'}`}>{e}</button>
+                                            <button key={e} onClick={() => setEstado(e)} className={`px-4 py-1 text-[10px] font-black rounded uppercase transition-all ${estado === e ? 'bg-cyan-600 text-white font-black' : 'text-slate-500'}`}>{e}</button>
                                         ))}
                                     </div>
-
-                                    <button onClick={() => { const exists = savedBudgets.some(b => b.nroPresupuesto === nroPresupuesto); if (exists) setShowSaveConfirmModal(true); else executeSave(nroPresupuesto); }} className="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-1.5 rounded-lg text-xs font-black transition-all font-mono shadow">SINCRONIZAR</button>
+                                    <button onClick={() => { const exists = savedBudgets.some(b => b.nroPresupuesto === nroPresupuesto); if (exists) setShowSaveConfirmModal(true); else executeSave(nroPresupuesto); }} className="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded-xl text-xs font-black transition-all font-mono">SINCRONIZAR</button>
                                 </>
                             )}
                             {vistaActiva === 'remisiones' && (
                                 <>
-                                    <button onClick={() => { setCliente({nombre:"", ruc:"", direccion:"", atencion:"", vendedor:"", telefono:"", email:""}); setNroRemision(generarNroRemision(savedRemisiones)); setRemisionItems([{id:Date.now(), descripcion:"", cantidad:1, indigoMedida:"UNIDAD", pesoTotalKg:0}]); setRemisionDatos(p => ({...p, comprobanteVenta:"", facturaManual:""})); }} className="text-[10px] font-black text-slate-300 hover:text-amber-400 flex items-center gap-1 uppercase transition-all font-mono px-2 py-1 bg-slate-800 rounded-lg border border-slate-700"><SafeIcon name="FilePlus" size={12} /> NUEVA_CARGA</button>
-                                    <button onClick={executeSaveRemision} className="bg-amber-600 text-white px-4 py-1.5 rounded-lg text-xs font-black hover:bg-amber-500 transition-all font-mono shadow">GUARDAR_CARGA</button>
+                                    <button onClick={() => { setCliente({nombre:"", ruc:"", direccion:"", atencion:"", vendedor:"", telefono:"", email:""}); setNroRemision(generarNroRemision(savedRemisiones)); setRemisionItems([{id:Date.now(), descripcion:"", cantidad:1, indigoMedida:"UNIDAD", pesoTotalKg:0}]); setRemisionDatos(p => ({...p, comprobanteVenta:"", facturaManual:""})); }} className="text-xs font-black text-slate-300 hover:text-amber-400 flex items-center gap-1.5 uppercase transition-all font-mono"><SafeIcon name="FilePlus" size={14} /> NUEVA_CARGA</button>
+                                    <button onClick={executeSaveRemision} className="bg-amber-600 text-white px-6 py-2 rounded-xl text-xs font-black hover:bg-amber-500 transition-all font-mono">GUARDAR_CARGA</button>
                                 </>
                             )}
                             {(vistaActiva === 'presupuestos' || vistaActiva === 'remisiones') && (
-                                <button onClick={() => window.print()} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-1.5 rounded-lg text-xs font-black transition-all font-mono flex items-center gap-1"><SafeIcon name="Printer" size={12}/> IMPRIMIR</button>
+                                <button onClick={() => window.print()} className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-xl text-xs font-black transition-all font-mono">IMPRIMIR</button>
                             )}
-                            <button onClick={handleLogout} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition-colors ml-1"><SafeIcon name="LogOut" size={15}/></button>
+                            <button onClick={handleLogout} className="text-slate-400 hover:text-rose-500 p-2 rounded-lg transition-colors"><SafeIcon name="LogOut" size={16}/></button>
                         </div>
                     </nav>
 
@@ -716,14 +679,14 @@
                     {msg && <div className="fixed top-16 right-6 z-[100] bg-slate-950 border border-cyan-500/30 text-cyan-400 px-6 py-3 rounded-2xl text-[10px] uppercase font-black tracking-wider font-mono fade-in">{msg}</div>}
 
                     {/* VISTA CONTENEDORA GENERAL ULTRA ANCHA */}
-                    <div className="w-full max-w-[100vw] px-3 md:px-6 pt-4 font-black overflow-x-hidden">
+                    <div className="w-full max-w-7xl px-6 pt-6 font-black">
                         
                         {/* 📊 SECCIÓN: DASHBOARD FUTURISTA DE MONITOREO */}
                         {vistaActiva === 'dashboard' && (
                             <div className="space-y-6 animate-fadeIn text-left">
                                 <div className="bg-[#1e293b] rounded-3xl p-6 border border-slate-700 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                     <div>
-                                        <h2 className="text-xl font-black text-white uppercase tracking-tight">CENTRO DE DATOS MULTIEMPRESA</h2>
+                                        <h2 className="text-xl font-black text-white uppercase tracking-tight">CENTRO DE DATOS METALCOM</h2>
                                         <p className="text-xs text-cyan-400 uppercase mt-0.5 font-mono">MONITOREO DE SISTEMA // CONTROL GLOBAL</p>
                                     </div>
                                     <div className="bg-[#111827] px-4 py-2 rounded-2xl border border-slate-700 text-center font-mono text-xs text-cyan-400 font-bold uppercase tracking-widest shadow-inner">
@@ -762,7 +725,7 @@
                                                 <div className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full" style={{ width: `${metricasDashboard.efectividad}%` }}></div>
                                             </div>
                                         </div>
-                                        <p className="text-[9px] text-slate-400 leading-relaxed uppercase font-mono">Cálculo de efectividad industrial basado en la relación entre presupuestos aprobados y cotizaciones vivas procesadas.</p>
+                                        <p className="text-[9px] text-slate-400 leading-relaxed uppercase font-mono">Cálculo de efectividad industrial basado en la relación entre presupuestos aprobados y cotizaciones vivas procesadas en la planta.</p>
                                     </div>
 
                                     <div className="bg-[#1e293b] rounded-3xl p-6 border border-slate-700 shadow-xl flex flex-col justify-between relative overflow-hidden group">
@@ -872,43 +835,9 @@
                                                         <tr className="align-top print-no-break print-compact-py hover:bg-slate-800/40 transition-colors">
                                                             <td className="py-2 text-[10px] text-slate-400 font-mono text-center pt-3">{idx + 1}</td>
                                                             <td className="py-2 pl-2 pr-4 pt-2">
-                                                                <div className="flex items-center gap-2 relative">
-                                                                    <AutoResizeTextarea 
-                                                                        isTitle={true} 
-                                                                        placeholder="TÍTULO DEL SERVICIO O PRODUCTO..." 
-                                                                        value={item.titulo} 
-                                                                        className="flex-1 font-black text-white print:text-black text-[11px] uppercase tracking-tight" 
-                                                                        onFocus={() => setShowServiceList(p => ({ ...p, [item.id]: true }))}
-                                                                        onBlur={() => setTimeout(() => setShowServiceList(p => ({ ...p, [item.id]: false })), 200)}
-                                                                        onChange={e => {
-                                                                            actualizarItem(item.id, 'titulo', e.target.value.toUpperCase());
-                                                                            setShowServiceList(p => ({ ...p, [item.id]: true }));
-                                                                        }}
-                                                                    />
-                                                                    <button onClick={() => setExpandedCosts(p => ({...p, [item.id]: !p[item.id]}))} className="no-print p-1 bg-slate-800 border border-slate-600 rounded text-slate-300 hover:text-cyan-400 shadow-sm" title="Parámetros de Costo">
-                                                                        <SafeIcon name="Settings" size={11}/>
-                                                                    </button>
-
-                                                                    {/* MENÚ FLOTANTE DE SERVICIOS PREDEFINIDOS */}
-                                                                    {showServiceList[item.id] && (
-                                                                        <div className="absolute top-full left-0 w-full mt-1 bg-[#1e293b] border border-cyan-500/40 rounded-xl shadow-2xl z-50 overflow-hidden no-print">
-                                                                            {serviciosPredeterminados
-                                                                                .filter(s => !item.titulo || s.toLowerCase().includes(item.titulo.toLowerCase()))
-                                                                                .map((serv, sIdx) => (
-                                                                                    <div 
-                                                                                        key={sIdx} 
-                                                                                        onClick={() => {
-                                                                                            actualizarItem(item.id, 'titulo', serv);
-                                                                                            setShowServiceList(p => ({ ...p, [item.id]: false }));
-                                                                                        }} 
-                                                                                        className="p-2.5 hover:bg-slate-700 cursor-pointer border-b border-slate-800 last:border-0 transition-colors text-left font-mono text-[10px] font-black text-cyan-400 flex items-center gap-2"
-                                                                                    >
-                                                                                        <SafeIcon name="Wrench" size={10} />
-                                                                                        {serv}
-                                                                                    </div>
-                                                                                ))}
-                                                                        </div>
-                                                                    )}
+                                                                <div className="flex items-center gap-2">
+                                                                    <AutoResizeTextarea isTitle={true} placeholder="Estructura metálica..." value={item.titulo} className="flex-1 font-black text-white print:text-black text-[11px] uppercase tracking-tight" onChange={e => actualizarItem(item.id, 'titulo', e.target.value)}/>
+                                                                    <button onClick={() => setExpandedCosts(p => ({...p, [item.id]: !p[item.id]}))} className="no-print p-1 bg-slate-800 border border-slate-600 rounded text-slate-300 hover:text-cyan-400 shadow-sm" title="Parámetros SW"><SafeIcon name="Settings" size={11}/></button>
                                                                 </div>
                                                             </td>
                                                             <td className="py-2 pt-3 text-center px-1"><input type="number" className="w-full text-center outline-none bg-transparent font-mono text-white print:text-black font-bold focus:text-cyan-400" value={item.cantidad} onChange={e => actualizarItem(item.id, 'cantidad', parseFloat(e.target.value) || 0)}/></td>
@@ -920,7 +849,7 @@
                                                             <td></td>
                                                             <td colSpan="4" className="pl-2 pb-3 pt-0">
                                                                 <div className="border-l-2 border-slate-700 pl-2">
-                                                                    <AutoResizeTextarea placeholder="Descripción, especificaciones o detalles..." value={item.detalles} className="text-[10px] text-slate-400 italic font-medium" onChange={e => actualizarItem(item.id, 'detalles', e.target.value)}/>
+                                                                    <AutoResizeTextarea placeholder="Detalles estructurales, perfiles o dimensiones..." value={item.detalles} className="text-[10px] text-slate-400 italic font-medium" onChange={e => actualizarItem(item.id, 'detalles', e.target.value)}/>
                                                                 </div>
                                                             </td>
                                                             <td className="no-print"></td>
@@ -930,25 +859,25 @@
                                                                 <td colSpan="6" className="p-4 border-l-4 border-l-cyan-500">
                                                                     <div className="cost-panel grid grid-cols-1 md:grid-cols-4 gap-4">
                                                                         <div className="text-left">
-                                                                            <label className="text-[8px] text-slate-400 block uppercase font-mono">PESO / CANT_BASE (KG)</label>
+                                                                            <label className="text-[8px] text-slate-400 block uppercase font-mono">PESO_SOLIDWORKS (KG)</label>
                                                                             <input type="number" className="w-full cyber-input p-1.5 rounded-lg text-xs font-mono" value={item.pesoKg} onChange={e => actualizarItem(item.id, 'pesoKg', e.target.value)}/>
                                                                             <label className="text-[8px] text-slate-400 block uppercase mt-2 font-mono">PRECIO_UNIDAD_KG</label>
                                                                             <NumericInput className="w-full cyber-input p-1.5 rounded-lg text-xs font-mono" value={item.precioKg} onChange={val => actualizarItem(item.id, 'precioKg', val)}/>
                                                                         </div>
                                                                         <div className="text-left">
-                                                                            <label className="text-[8px] text-slate-400 block uppercase font-mono">CONSUMIBLES / INSUMOS Gs</label>
+                                                                            <label className="text-[8px] text-slate-400 block uppercase font-mono">CONSUMIBLES_Gs</label>
                                                                             <NumericInput className="w-full cyber-input p-1.5 rounded-lg text-xs font-mono" value={item.insumos} onChange={val => actualizarItem(item.id, 'insumos', val)}/>
                                                                             <label className="text-[8px] text-cyan-400 block uppercase mt-2 font-mono">PORCENTAJE_MARGEN %</label>
                                                                             <input type="number" className="w-full bg-[#111827] border border-cyan-500/30 p-1.5 rounded-lg text-xs font-mono font-bold text-cyan-400 shadow-inner" value={item.margenDeseado} onChange={e => actualizarItem(item.id, 'margenDeseado', e.target.value)}/>
                                                                         </div>
                                                                         <div className="text-left">
-                                                                            <label className="text-[8px] text-slate-400 block uppercase font-mono">DÍAS / HORAS ESTIMADAS</label>
+                                                                            <label className="text-[8px] text-slate-400 block uppercase font-mono">DÍAS_ESTIMADOS</label>
                                                                             <input type="number" className="w-full cyber-input p-1.5 rounded-lg text-xs font-mono" value={item.diasTrabajados} onChange={e => actualizarItem(item.id, 'diasTrabajados', e.target.value)}/>
-                                                                            <label className="text-[8px] text-slate-400 block uppercase mt-2 font-mono">MANO_OBRA_DÍA/HORA Gs</label>
+                                                                            <label className="text-[8px] text-slate-400 block uppercase mt-2 font-mono">MANO_OBRA_DÍA_Gs</label>
                                                                             <NumericInput className="w-full cyber-input p-1.5 rounded-lg text-xs font-mono" value={item.costoDia} onChange={val => actualizarItem(item.id, 'costoDia', val)}/>
                                                                         </div>
                                                                         <div className="bg-[#111827] border border-slate-700 rounded-xl p-3 flex flex-col justify-center text-left shadow-inner">
-                                                                            <span className="text-[7px] text-slate-500 uppercase font-mono">COSTO_DIRECTO Gs</span>
+                                                                            <span className="text-[7px] text-slate-500 uppercase font-mono">COSTO_FABRICACIÓN_Gs</span>
                                                                             <span className="text-xs font-mono font-bold text-slate-300">{formatMoneda((item.pesoKg * item.precioKg) + (item.diasTrabajados * item.costoDia) + Number(item.insumos))}</span>
                                                                             <div className="border-t border-slate-700 pt-1 mt-1.5">
                                                                                 <span className="text-[7px] text-cyan-500 uppercase font-mono">VALOR_SUGERIDO ({item.margenDeseado}%)</span>
@@ -965,7 +894,7 @@
                                                 ))}
                                             </tbody>
                                         </table>
-                                        <button onClick={() => setItems([...items, {id: Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0, pesoKg:0, precioKg:0, insumos:0, diasTrabajados:0, costoDia:250000, margenDeseado:30}])} className="mt-4 no-print bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-[9px] uppercase shadow-md transition-all flex items-center gap-1.5"><SafeIcon name="Plus" size={12}/> AGREGAR_ÍTEM</button>
+                                        <button onClick={() => setItems([...items, {id: Date.now(), titulo:"", detalles:"", cantidad:1, precioUnitario:0, pesoKg:0, precioKg:0, insumos:0, diasTrabajados:0, costoDia:250000, margenDeseado:30}])} className="mt-4 no-print bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl text-[9px] uppercase shadow-md transition-all flex items-center gap-1.5"><SafeIcon name="Plus" size={12}/> AGREGAR_ESTRUCTURA_TÉCNICA</button>
                                     </div>
 
                                     {/* PANEL DE OPERACIÓN MONETARIA */}
@@ -1108,7 +1037,7 @@
                                                     <tr key={item.id} className="align-top print-no-break print-compact-py hover:bg-slate-800/30 transition-colors">
                                                         <td className="py-2 text-[10px] text-slate-400 font-mono text-center pt-3">{idx + 1}</td>
                                                         <td className="py-2 pl-2 pr-4 pt-2">
-                                                            <AutoResizeTextarea isTitle={true} placeholder="Estructura o Ítem..." value={item.descripcion} className="flex-1 font-black text-white print:text-black text-[11px] uppercase tracking-tight" onChange={e => actualizarRemisionItem(item.id, 'descripcion', e.target.value)}/>
+                                                            <AutoResizeTextarea isTitle={true} placeholder="Estructura..." value={item.descripcion} className="flex-1 font-black text-white print:text-black text-[11px] uppercase tracking-tight" onChange={e => actualizarRemisionItem(item.id, 'descripcion', e.target.value)}/>
                                                         </td>
                                                         <td className="py-2 pt-3 text-center px-1">
                                                             <input type="number" className="w-full text-center outline-none bg-transparent font-mono text-white print:text-black focus:text-amber-400 font-bold" value={item.cantidad} onChange={e => actualizarRemisionItem(item.id, 'cantidad', parseFloat(e.target.value) || 0)}/>
@@ -1140,250 +1069,33 @@
                             </div>
                         )}
 
-                        {/* 📦 VISTA NUEVA Y OPTIMIZADA: ALMACÉN E INVENTARIO */}
-                        {vistaActiva === 'almacen' && (
-                            <div className="space-y-6 animate-fadeIn text-left font-black">
-                                <div className="bg-[#1e293b] rounded-3xl p-6 border border-slate-700 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                    <div>
-                                        <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                                            <SafeIcon name="Package" size={22} className="text-cyan-400"/> MAESTRO DE INVENTARIO Y MATERIAS PRIMAS
-                                        </h2>
-                                        <p className="text-xs text-cyan-400 uppercase mt-0.5 font-mono">STOCK FÍSICO DE PLANTA // CONTROL DE MATERIALES Y CONSUMIBLES</p>
-                                    </div>
-                                    <button className="bg-cyan-600 hover:bg-cyan-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider font-mono shadow-[0_0_15px_rgba(6,182,212,0.2)] transition-all flex items-center gap-2">
-                                        <SafeIcon name="Plus" size={14}/> REGISTRAR_INSUMO
-                                    </button>
-                                </div>
-
-                                {/* TARJETAS DE ALERTA DE STOCK */}
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                    <div className="bg-[#1e293b] rounded-2xl p-4 border border-slate-700 flex items-center gap-4">
-                                        <div className="p-3 bg-cyan-950/50 text-cyan-400 rounded-xl border border-cyan-500/30"><SafeIcon name="Layers" size={20}/></div>
-                                        <div><span className="text-[9px] text-slate-400 uppercase font-mono block">PERFILES Y VIGAS</span><span className="text-base font-black font-mono text-white">12.450 KG</span></div>
-                                    </div>
-                                    <div className="bg-[#1e293b] rounded-2xl p-4 border border-slate-700 flex items-center gap-4">
-                                        <div className="p-3 bg-emerald-950/50 text-emerald-400 rounded-xl border border-emerald-500/30"><SafeIcon name="Box" size={20}/></div>
-                                        <div><span className="text-[9px] text-slate-400 uppercase font-mono block">CHAPAS Y LAMINADOS</span><span className="text-base font-black font-mono text-white">8.200 KG</span></div>
-                                    </div>
-                                    <div className="bg-[#1e293b] rounded-2xl p-4 border border-slate-700 flex items-center gap-4">
-                                        <div className="p-3 bg-amber-950/50 text-amber-400 rounded-xl border border-amber-500/30"><SafeIcon name="Flame" size={20}/></div>
-                                        <div><span className="text-[9px] text-slate-400 uppercase font-mono block">CONSUMIBLES TALLER</span><span className="text-base font-black font-mono text-amber-400">145 CAJAS</span></div>
-                                    </div>
-                                    <div className="bg-[#1e293b] rounded-2xl p-4 border border-rose-500/40 bg-rose-950/10 flex items-center gap-4">
-                                        <div className="p-3 bg-rose-950/50 text-rose-400 rounded-xl border border-rose-500/30"><SafeIcon name="AlertTriangle" size={20}/></div>
-                                        <div><span className="text-[9px] text-rose-400 uppercase font-mono block">ALERTAS DE CRÍTICO</span><span className="text-base font-black font-mono text-rose-400">2 ÍTEMS</span></div>
-                                    </div>
-                                </div>
-
-                                {/* TABLA DE INVENTARIO */}
-                                <div className="bg-[#1e293b] rounded-3xl border border-slate-700 p-6 shadow-xl overflow-hidden">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-xs text-slate-300 uppercase tracking-widest font-mono flex items-center gap-2"><SafeIcon name="Database" size={14} className="text-cyan-400"/> LISTADO DE MATERIALES EN DEPÓSITO</h3>
-                                        <input type="text" placeholder="BUSCAR MATERIAL O PERFIL..." className="cyber-input px-3 py-1.5 rounded-xl text-xs font-mono w-64 outline-none" />
-                                    </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse font-mono">
-                                            <thead>
-                                                <tr className="border-b border-slate-700 text-slate-400 uppercase text-[9px] tracking-widest">
-                                                    <th className="py-3 px-3">CÓDIGO</th>
-                                                    <th className="py-3 px-3">DESCRIPCIÓN DEL MATERIAL</th>
-                                                    <th className="py-3 px-3">CATEGORÍA</th>
-                                                    <th className="py-3 px-3 text-center">CANTIDAD / DISPONIBLE</th>
-                                                    <th className="py-3 px-3 text-right">COSTO ESTIMADO KG/UNID</th>
-                                                    <th className="py-3 px-3 text-center">ESTADO</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-800 text-xs">
-                                                <tr className="hover:bg-slate-800/50 transition-colors">
-                                                    <td className="py-3 px-3 text-cyan-400 font-bold">MAT-001</td>
-                                                    <td className="py-3 px-3 text-white font-black uppercase">Perfil IPN 160 x 6 mts</td>
-                                                    <td className="py-3 px-3 text-slate-400 uppercase text-[10px]">Vigas Estructurales</td>
-                                                    <td className="py-3 px-3 text-center text-white font-bold">42 Barras (4.500 KG)</td>
-                                                    <td className="py-3 px-3 text-right text-slate-300">Gs. 9.500 / Kg</td>
-                                                    <td className="py-3 px-3 text-center"><span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] px-2 py-0.5 rounded font-bold uppercase">Óptimo</span></td>
-                                                </tr>
-                                                <tr className="hover:bg-slate-800/50 transition-colors">
-                                                    <td className="py-3 px-3 text-cyan-400 font-bold">MAT-002</td>
-                                                    <td className="py-3 px-3 text-white font-black uppercase">Chapa Lisa ASTM A36 1/4" (6mm)</td>
-                                                    <td className="py-3 px-3 text-slate-400 uppercase text-[10px]">Laminados en Caliente</td>
-                                                    <td className="py-3 px-3 text-center text-white font-bold">18 Planchas (3.200 KG)</td>
-                                                    <td className="py-3 px-3 text-right text-slate-300">Gs. 8.800 / Kg</td>
-                                                    <td className="py-3 px-3 text-center"><span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] px-2 py-0.5 rounded font-bold uppercase">Óptimo</span></td>
-                                                </tr>
-                                                <tr className="hover:bg-slate-800/50 transition-colors">
-                                                    <td className="py-3 px-3 text-cyan-400 font-bold">MAT-003</td>
-                                                    <td className="py-3 px-3 text-white font-black uppercase">Alambre MIG ER70S-6 1.2mm (Carrete 15kg)</td>
-                                                    <td className="py-3 px-3 text-slate-400 uppercase text-[10px]">Consumibles Taller</td>
-                                                    <td className="py-3 px-3 text-center text-amber-400 font-bold">3 Carretes</td>
-                                                    <td className="py-3 px-3 text-right text-slate-300">Gs. 210.000 / Unid</td>
-                                                    <td className="py-3 px-3 text-center"><span className="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[9px] px-2 py-0.5 rounded font-bold uppercase">Reordenar</span></td>
-                                                </tr>
-                                                <tr className="hover:bg-slate-800/50 transition-colors">
-                                                    <td className="py-3 px-3 text-cyan-400 font-bold">MAT-004</td>
-                                                    <td className="py-3 px-3 text-white font-black uppercase">Disco de Corte 7" x 1.6mm Abrasivo</td>
-                                                    <td className="py-3 px-3 text-slate-400 uppercase text-[10px]">Herramientas / Insumos</td>
-                                                    <td className="py-3 px-3 text-center text-rose-400 font-bold">5 Unidades</td>
-                                                    <td className="py-3 px-3 text-right text-slate-300">Gs. 12.000 / Unid</td>
-                                                    <td className="py-3 px-3 text-center"><span className="bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[9px] px-2 py-0.5 rounded font-bold uppercase">Stock Crítico</span></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 🏗️ VISTA NUEVA Y OPTIMIZADA: TALLER Y CONTROL DE OBRAS */}
-                        {vistaActiva === 'obras' && (
-                            <div className="space-y-6 animate-fadeIn text-left font-black">
-                                <div className="bg-[#1e293b] rounded-3xl p-6 border border-slate-700 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                    <div>
-                                        <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                                            <SafeIcon name="HardHat" size={22} className="text-amber-500"/> TABLERO KANBAN DE PROYECTOS Y OBRAS
-                                        </h2>
-                                        <p className="text-xs text-amber-500 uppercase mt-0.5 font-mono">SEGUIMIENTO DE PROCESOS Y EJECUCIÓN</p>
-                                    </div>
-                                    <button className="bg-amber-600 hover:bg-amber-500 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider font-mono shadow-[0_0_15px_rgba(245,158,11,0.2)] transition-all flex items-center gap-2">
-                                        <SafeIcon name="Plus" size={14}/> NUEVA_OBRA
-                                    </button>
-                                </div>
-
-                                {/* COLUMNAS KANBAN DE PROCESO DE TALLER */}
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start font-mono">
-                                    
-                                    {/* COLUMNA 1: INGENIERÍA */}
-                                    <div className="bg-[#1e293b] rounded-2xl border border-slate-700 p-4 space-y-3">
-                                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
-                                            <span className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5"><SafeIcon name="FileText" size={13}/> INGENIERÍA / PLANIFICACIÓN</span>
-                                            <span className="bg-slate-800 text-cyan-400 text-[10px] px-2 py-0.5 rounded-full border border-slate-700 font-bold">1</span>
-                                        </div>
-                                        <div className="bg-[#111827] p-3.5 rounded-xl border border-slate-700 space-y-2 hover:border-cyan-500 transition-colors">
-                                            <span className="text-[8px] bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded font-bold border border-cyan-500/20 uppercase">PR-2026.0004</span>
-                                            <h4 className="text-xs font-black text-white uppercase leading-snug">Estructura Galpón 20x40m</h4>
-                                            <p className="text-[10px] text-slate-400">Cliente: AGROPAR S.A.</p>
-                                            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
-                                                <div className="bg-cyan-500 h-full w-[25%]"></div>
-                                            </div>
-                                            <span className="text-[8px] text-slate-500 block text-right font-bold">AVANCE: 25%</span>
-                                        </div>
-                                    </div>
-
-                                    {/* COLUMNA 2: PREPARACIÓN */}
-                                    <div className="bg-[#1e293b] rounded-2xl border border-slate-700 p-4 space-y-3">
-                                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
-                                            <span className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5"><SafeIcon name="Scissors" size={13}/> PREPARACIÓN / ARMADO</span>
-                                            <span className="bg-slate-800 text-amber-400 text-[10px] px-2 py-0.5 rounded-full border border-slate-700 font-bold">2</span>
-                                        </div>
-                                        <div className="bg-[#111827] p-3.5 rounded-xl border border-slate-700 space-y-2 hover:border-amber-500 transition-colors">
-                                            <span className="text-[8px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded font-bold border border-amber-500/20 uppercase">PR-2026.0002</span>
-                                            <h4 className="text-xs font-black text-white uppercase leading-snug">Tanque de Acero Inox 5.000L</h4>
-                                            <p className="text-[10px] text-slate-400">Cliente: LACTEOS DEL ESTE</p>
-                                            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
-                                                <div className="bg-amber-500 h-full w-[50%]"></div>
-                                            </div>
-                                            <span className="text-[8px] text-slate-500 block text-right font-bold">AVANCE: 50%</span>
-                                        </div>
-                                    </div>
-
-                                    {/* COLUMNA 3: EJECUCIÓN */}
-                                    <div className="bg-[#1e293b] rounded-2xl border border-slate-700 p-4 space-y-3">
-                                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
-                                            <span className="text-xs font-black text-blue-400 uppercase tracking-wider flex items-center gap-1.5"><SafeIcon name="Flame" size={13}/> EJECUCIÓN / TRATAMIENTO</span>
-                                            <span className="bg-slate-800 text-blue-400 text-[10px] px-2 py-0.5 rounded-full border border-slate-700 font-bold">1</span>
-                                        </div>
-                                        <div className="bg-[#111827] p-3.5 rounded-xl border border-slate-700 space-y-2 hover:border-blue-500 transition-colors">
-                                            <span className="text-[8px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-bold border border-blue-500/20 uppercase">PR-2026.0001</span>
-                                            <h4 className="text-xs font-black text-white uppercase leading-snug">Pasarela Metálica Peatonal</h4>
-                                            <p className="text-[10px] text-slate-400">Cliente: CONSTRUCTORA VIAL</p>
-                                            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
-                                                <div className="bg-blue-500 h-full w-[75%]"></div>
-                                            </div>
-                                            <span className="text-[8px] text-slate-500 block text-right font-bold">AVANCE: 75%</span>
-                                        </div>
-                                    </div>
-
-                                    {/* COLUMNA 4: ENTREGA / MONTAJE */}
-                                    <div className="bg-[#1e293b] rounded-2xl border border-slate-700 p-4 space-y-3">
-                                        <div className="flex justify-between items-center border-b border-slate-700 pb-2">
-                                            <span className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5"><SafeIcon name="Truck" size={13}/> ENTREGA / MONTAJE</span>
-                                            <span className="bg-slate-800 text-emerald-400 text-[10px] px-2 py-0.5 rounded-full border border-slate-700 font-bold">1</span>
-                                        </div>
-                                        <div className="bg-[#111827] p-3.5 rounded-xl border border-slate-700 space-y-2 hover:border-emerald-500 transition-colors">
-                                            <span className="text-[8px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold border border-emerald-500/20 uppercase">PR-2026.0003</span>
-                                            <h4 className="text-xs font-black text-white uppercase leading-snug">Techo Tinglado Curvo</h4>
-                                            <p className="text-[10px] text-slate-400">Cliente: DEPOSITOS LUQUE</p>
-                                            <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
-                                                <div className="bg-emerald-500 h-full w-[90%]"></div>
-                                            </div>
-                                            <span className="text-[8px] text-slate-500 block text-right font-bold">AVANCE: 90%</span>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 🖥 Honorarios: MÓDULO ANCHO DE HISTORIAL MAESTRO DE FIREBASE MULTIEMPRESA */}
+                        {/* 🖥 Honorarios: MÓDULO ANCHO DE HISTORIAL MAESTRO DE FIREBASE */}
                         {vistaActiva === 'historial' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn text-left">
                                 
                                 <div className="bg-[#1e293b] rounded-3xl border border-slate-700 p-6 shadow-xl flex flex-col max-h-[80vh]">
                                     <div className="border-b border-slate-700 pb-3 mb-4">
-                                        <h3 className="text-xs text-cyan-400 uppercase tracking-widest font-mono flex items-center gap-2"><SafeIcon name="FolderOpen" size={14} /> // REGISTRO POR EMPRESA EMISORA</h3>
-                                        <p className="text-[9px] text-slate-400 uppercase font-mono mt-0.5">Clasificación jerárquica por Marca Emisora y Clientes.</p>
+                                        <h3 className="text-xs text-cyan-400 uppercase tracking-widest font-mono flex items-center gap-2"><SafeIcon name="FolderOpen" size={14} /> // REGISTRO_BASE_PRESUPUESTOS</h3>
+                                        <p className="text-[9px] text-slate-400 uppercase font-mono mt-0.5">Sincronización en caliente indexada por carpetas de clientes.</p>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
-                                        {Object.entries(groupedBudgetsByEmpresa).map(([empresaNombre, clientesGroup]) => (
-                                            <div key={empresaNombre} className="space-y-1">
-                                                {/* CARPETA RAÍZ: EMPRESA EMISORA */}
-                                                <button onClick={() => setOpenFolders(p => ({...p, [empresaNombre]: !p[empresaNombre]}))} className="w-full flex items-center justify-between p-3.5 bg-[#0f172a] hover:bg-slate-800 border-2 border-cyan-500/30 rounded-2xl transition-all shadow-md">
-                                                    <div className="flex items-center gap-2 truncate uppercase text-xs font-black text-cyan-400 font-mono">
-                                                        <SafeIcon name={openFolders[empresaNombre] ? "FolderOpen" : "Folder"} size={16} className="text-cyan-400" />
-                                                        {empresaNombre}
-                                                    </div>
-                                                    <span className="text-[9px] bg-cyan-950 border border-cyan-500/40 px-3 py-1 rounded-full font-mono text-cyan-300 font-bold">
-                                                        {Object.values(clientesGroup).reduce((sum, list) => sum + list.length, 0)} PRESUP.
-                                                    </span>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                                        {Object.entries(groupedBudgets).map(([folder, budgets]) => (
+                                            <div key={folder} className="space-y-1">
+                                                <button onClick={() => setOpenFolders(p => ({...p, [folder]: !p[folder]}))} className="w-full flex items-center justify-between p-3 bg-[#111827] hover:bg-slate-800 border border-slate-700 rounded-2xl transition-all">
+                                                    <div className="flex items-center gap-2 truncate uppercase text-[11px] font-black text-slate-200"><SafeIcon name={openFolders[folder] ? "FolderOpen" : "Folder"} size={14} className="text-cyan-500" />{folder}</div>
+                                                    <span className="text-[9px] bg-slate-900 border border-slate-700 px-2.5 py-0.5 rounded-full font-mono text-cyan-400 font-bold">{budgets.length}</span>
                                                 </button>
-
-                                                {/* SUB-CARPETAS: CLIENTES DE ESTA EMPRESA */}
-                                                {openFolders[empresaNombre] && (
-                                                    <div className="ml-3 pl-3 border-l-2 border-slate-700 space-y-2 mt-2">
-                                                        {Object.entries(clientesGroup).map(([clienteNombre, listBudgets]) => (
-                                                            <div key={clienteNombre} className="space-y-1">
-                                                                <button onClick={() => setOpenFolders(p => ({...p, [`${empresaNombre}_${clienteNombre}`]: !p[`${empresaNombre}_${clienteNombre}`]}))} className="w-full flex items-center justify-between p-2.5 bg-[#1e293b] hover:bg-slate-700/60 border border-slate-700 rounded-xl transition-all">
-                                                                    <div className="flex items-center gap-2 truncate uppercase text-[11px] font-bold text-slate-200 font-mono">
-                                                                        <SafeIcon name="User" size={13} className="text-slate-400" />
-                                                                        {clienteNombre}
-                                                                    </div>
-                                                                    <span className="text-[8px] bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-full font-mono text-slate-400 font-bold">{listBudgets.length}</span>
-                                                                </button>
-
-                                                                {/* PRESUPUESTOS INDIVIDUALES */}
-                                                                {openFolders[`${empresaNombre}_${clienteNombre}`] && listBudgets.map(b => (
-                                                                    <div key={b.id} className="ml-3">
-                                                                        <div onClick={() => { 
-                                                                            if(b.empresa) setEmpresa(b.empresa);
-                                                                            setNroPresupuesto(b.nroPresupuesto); 
-                                                                            setEstado(b.estado); 
-                                                                            setCliente(b.cliente); 
-                                                                            setItems(b.items); 
-                                                                            setCondiciones(b.condiciones); 
-                                                                            setVistaActiva('presupuestos'); 
-                                                                            window.scrollTo({top:0, behavior:'smooth'}); 
-                                                                        }} className={`p-2.5 rounded-xl border border-slate-700 hover:border-cyan-500 cursor-pointer transition-all border-l-4 bg-[#131926] ${b.estado === 'aprobado' ? 'border-l-emerald-500' : b.estado === 'rechazado' ? 'border-l-rose-500' : 'border-l-amber-500'}`}>
-                                                                            <div className="flex justify-between items-center">
-                                                                                <p className="font-bold text-[10px] text-white uppercase font-mono tracking-tight">{b.nroPresupuesto}</p>
-                                                                                <span className={`text-[8px] px-2 py-0.5 rounded font-mono font-bold text-slate-950 uppercase ${b.estado === 'aprobado' ? 'bg-emerald-400' : b.estado === 'rechazado' ? 'bg-rose-400' : 'bg-amber-400'}`}>{b.estado}</span>
-                                                                            </div>
-                                                                            <p className="text-[10px] font-black text-cyan-400 font-mono mt-1">{formatMoneda(b.total)}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
+                                                {openFolders[folder] && budgets.map(b => (
+                                                    <div key={b.id} className="relative group/budgetItem">
+                                                        <div onClick={() => { setNroPresupuesto(b.nroPresupuesto); setEstado(b.estado); setCliente(b.cliente); setItems(b.items); setCondiciones(b.condiciones); setVistaActiva('presupuestos'); window.scrollTo({top:0, behavior:'smooth'}); }} className={`ml-4 p-3 rounded-xl border border-slate-700 hover:border-cyan-500 cursor-pointer transition-all border-l-4 bg-[#131926] ${b.estado === 'aprobado' ? 'border-l-emerald-500' : b.estado === 'rechazado' ? 'border-l-rose-500' : 'border-l-amber-500'}`}>
+                                                            <div className="flex justify-between items-center">
+                                                                <p className="font-bold text-[10px] text-white uppercase font-mono tracking-tight">{b.nroPresupuesto}</p>
+                                                                <span className={`text-[8px] px-2 py-0.5 rounded font-mono font-bold text-slate-950 uppercase ${b.estado === 'aprobado' ? 'bg-emerald-400' : b.estado === 'rechazado' ? 'bg-rose-400' : 'bg-amber-400'}`}>{b.estado}</span>
                                                             </div>
-                                                        ))}
+                                                            <p className="text-[11px] font-black text-cyan-400 font-mono mt-1">{formatMoneda(b.total)}</p>
+                                                        </div>
                                                     </div>
-                                                )}
+                                                ))}
                                             </div>
                                         ))}
                                     </div>
@@ -1420,7 +1132,7 @@
                             <main className="bg-[#1e293b] rounded-3xl border border-slate-700 p-8 text-left shadow-2xl animate-fadeIn">
                                 <div className="border-b border-slate-700 pb-4 mb-6">
                                     <h2 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2 font-mono"><SafeIcon name="Sliders" size={18} className="text-cyan-400"/> // PARÁMETROS_CONFIG_SISTEMA</h2>
-                                    <p className="text-[10px] text-slate-400 uppercase font-mono mt-1">Configuración del servidor de variables globales comerciales.</p>
+                                    <p className="text-[10px] text-slate-400 uppercase font-mono mt-1">Configuración del servidor de variables globales comerciales de la maestranza.</p>
                                 </div>
                                 <form onSubmit={guardandoConfigEmpresa} className="space-y-5 max-w-2xl font-black">
                                     
