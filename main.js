@@ -10,9 +10,8 @@ autoUpdater.logger.transports.file.level = 'info';
 autoUpdater.setFeedURL({
   provider: 'github',
   owner: 'franciscosotelob-creador',
-  repo: 'sistema-de-presupuestos'
+  repo: 'TallerApp'
 });
-
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
